@@ -1,38 +1,60 @@
 #pragma once
 
-#include <map>
+#include <functional>
 #include <list>
+#include <map>
 #include <unordered_map>
 
 #include "Order.h"
 
+/*
+-----------------------------------------
+OrderLocation
+
+Stores everything required to locate an
+order in O(1) time for cancellation.
+-----------------------------------------
+*/
+struct OrderLocation
+{
+    Side side;
+    double price;
+    std::list<Order>::iterator iterator;
+};
+
+/*
+-----------------------------------------
+OrderBook
+
+Core matching engine implementing
+price-time priority.
+-----------------------------------------
+*/
 class OrderBook
 {
 private:
 
-    // Price -> FIFO queue of orders
-    std::map<double, std::list<Order>> buyBook;
+    // Highest price first
+    std::map<double, std::list<Order>, std::greater<double>> buyBook;
+
+    // Lowest price first
     std::map<double, std::list<Order>> sellBook;
 
-    // Order ID -> iterator (for O(1) cancellation)
-    std::unordered_map<int, std::list<Order>::iterator> orderIndex;
+    // Order ID -> Location
+    std::unordered_map<int, OrderLocation> orderIndex;
 
 private:
 
     void matchBuyOrder(Order& order);
-
     void matchSellOrder(Order& order);
-
-    void executeTrade(Order& incomingOrder,
-                      Order& restingOrder);
-
-    void removeEmptyPriceLevels();
 
 public:
 
+    OrderBook() = default;
+
     void addOrder(const Order& order);
 
-    void cancelOrder(int orderId);
+    bool cancelOrder(int orderId);
 
     void printBook() const;
 };

@@ -5,34 +5,25 @@ int main()
 {
     OrderBook book;
 
-    Order order1{
-        1,
-        Side::Buy,
-        100.0,
-        10,
-        1
-    };
 
-    Order order2{
-        2,
-        Side::Buy,
-        101.0,
-        5,
-        2
-    };
+    book.addOrder({1, Side::Buy, -100, 5, 1});
+book.addOrder({2, Side::Buy, 100, -5, 2});
+book.addOrder({1, Side::Buy, 100, 5, 1});
+book.addOrder({2, Side::Sell, 105, 5, 2});
 
-    Order order3{
-        3,
-        Side::Sell,
-        102.0,
-        8,
-        3
-    };
+book.printBook();
 
-    book.addOrder(order1);
-    book.addOrder(order2);
-    book.addOrder(order3);
+   
 
+
+
+   
+if(book.cancelOrder(999))
+    std::cout << "Wrong\n";
+else
+    std::cout << "Correct\n";
+
+    std::cout << "\nAfter cancellation:\n";
     book.printBook();
 
     return 0;

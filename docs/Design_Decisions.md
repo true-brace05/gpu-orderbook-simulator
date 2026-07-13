@@ -300,3 +300,102 @@ Create a dedicated executeTrade() helper.
 ## Trade-offs
 
 Introduces one additional function but significantly improves maintainability.
+# Decision 012: Store Buy Orders in Descending Price Order
+
+## Problem
+
+Buy orders must always match the highest available buy price.
+
+## Alternatives Considered
+
+1. Store ascending and use rbegin().
+2. Store descending using std::greater<double>.
+
+## Decision
+
+Use:
+
+std::map<double, std::list<Order>, std::greater<double>>
+
+for the buy book.
+
+## Why?
+
+- begin() always returns the best buy.
+- Matching code becomes symmetric for buy and sell books.
+- Simpler and easier to maintain.
+
+## Trade-offs
+
+Introduces a custom comparator but simplifies matching logic throughout the engine.
+# Decision 015: Store Iterators Immediately After Insertion
+
+## Problem
+
+After inserting an order into a price level, the engine needs an iterator for O(1) cancellation.
+
+## Decision
+
+Insert first using push_back(), then obtain the iterator using:
+
+std::prev(container.end())
+
+and immediately store it inside orderIndex.
+
+## Why?
+
+- O(1) lookup during cancellation.
+- No searching required.
+- Iterator remains valid while the order stays in the list.
+
+## Trade-offs
+
+Requires understanding list iterators, but avoids future linear scans.
+# Decision 016: Match Oldest Order First
+
+## Problem
+
+Multiple orders can exist at the same price level.
+
+## Decision
+
+Always execute the order at the front of the list.
+
+## Why?
+
+std::list maintains insertion order.
+
+front() therefore represents the oldest order.
+
+This satisfies the Time component of Price-Time Priority.
+
+## Trade-off
+
+FIFO ordering requires storing orders in insertion order, which std::list naturally provides.
+# Decision 017: Store Buy Book in Descending Order
+
+## Problem
+
+A sell order must always match the highest available buy price.
+
+## Decision
+
+Store buyBook as:
+
+std::map<double, std::list<Order>, std::greater<double>>
+
+instead of ascending order.
+
+## Why?
+
+Now:
+
+buyBook.begin()
+
+always returns the highest bid.
+
+The matching algorithm becomes symmetric with the sell book, which uses begin() to obtain the lowest ask.
+
+## Trade-off
+
+Requires a custom comparator but simplifies matching logic throughout the engine.
