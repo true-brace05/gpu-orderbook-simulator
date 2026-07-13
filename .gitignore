@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Build directory
+build/
+
+# Executables
+main
+*.out
+*.exe
+
+# VS Code
+.vscode/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Logs
+*.log
