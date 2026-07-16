@@ -7,10 +7,10 @@ int main()
     
     book.setVerbose(true);
 
-    book.addOrder({1, Side::Buy, -100, 5, 1});
-book.addOrder({2, Side::Buy, 100, -5, 2});
-book.addOrder({1, Side::Buy, 100, 5, 1});
-book.addOrder({2, Side::Sell, 105, 5, 2});
+    book.addOrder({1, Side::Buy, OrderType::Limit, -100, 5, 1});
+book.addOrder({2, Side::Buy, OrderType::Limit, 100, -5, 2});
+book.addOrder({1, Side::Buy, OrderType::Limit, 100, 5, 1});
+book.addOrder({2, Side::Sell, OrderType::Limit, 105, 5, 2});
 
 book.printBook();
 

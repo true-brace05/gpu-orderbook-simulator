@@ -13,9 +13,10 @@ void benchmarkCancellation(int numOrders)
         {
             i,
             Side::Buy,
+            OrderType::Limit,
             100,
             10,
-            i
+            static_cast<uint64_t>(i)
         });
     }
 

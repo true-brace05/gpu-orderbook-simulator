@@ -10,8 +10,8 @@ void testExactMatch()
 
     OrderBook book;
 
-    book.addOrder({1, Side::Sell, 100, 5, 1});
-    book.addOrder({2, Side::Buy, 100, 5, 2});
+    book.addOrder({1, Side::Sell, OrderType::Limit, 100, 5, 1});
+    book.addOrder({2, Side::Buy, OrderType::Limit, 100, 5, 2});
 
     assert(book.isEmpty());
 
@@ -26,8 +26,8 @@ void testPartialFill()
     OrderBook book;
 
     // Act
-    book.addOrder({1, Side::Sell, 100, 8, 1});
-    book.addOrder({2, Side::Buy, 100, 3, 2});
+    book.addOrder({1, Side::Sell, OrderType::Limit, 100, 8, 1});
+    book.addOrder({2, Side::Buy, OrderType::Limit, 100, 3, 2});
 
     // Assert
     assert(!book.isEmpty());
@@ -56,11 +56,11 @@ void testFIFO()
     // Arrange
     OrderBook book;
 
-    book.addOrder({1, Side::Sell, 100, 5, 1});
-    book.addOrder({2, Side::Sell, 100, 3, 2});
+    book.addOrder({1, Side::Sell, OrderType::Limit, 100, 5, 1});
+    book.addOrder({2, Side::Sell, OrderType::Limit, 100, 3, 2});
 
     // Act
-    book.addOrder({3, Side::Buy, 100, 6, 3});
+    book.addOrder({3, Side::Buy, OrderType::Limit, 100, 6, 3});
 
     // Assert
     assert(book.getTotalOrders() == 1);
@@ -88,12 +88,12 @@ void testMultiPriceLevel()
     // Arrange
     OrderBook book;
 
-    book.addOrder({1, Side::Sell, 100, 2, 1});
-    book.addOrder({2, Side::Sell, 101, 4, 2});
-    book.addOrder({3, Side::Sell, 102, 6, 3});
+    book.addOrder({1, Side::Sell, OrderType::Limit, 100, 2, 1});
+    book.addOrder({2, Side::Sell, OrderType::Limit, 101, 4, 2});
+    book.addOrder({3, Side::Sell, OrderType::Limit, 102, 6, 3});
 
     // Act
-    book.addOrder({4, Side::Buy, 102, 10, 4});
+    book.addOrder({4, Side::Buy, OrderType::Limit, 102, 10, 4});
 
     // Assert
     assert(book.getTotalOrders() == 1);
@@ -122,8 +122,8 @@ void testNoMatch()
     OrderBook book;
 
     // Act
-    book.addOrder({1, Side::Buy, 100, 5, 1});
-    book.addOrder({2, Side::Sell, 105, 5, 2});
+    book.addOrder({1, Side::Buy, OrderType::Limit, 100, 5, 1});
+    book.addOrder({2, Side::Sell, OrderType::Limit, 105, 5, 2});
 
     // Assert
     assert(book.getTotalOrders() == 2);

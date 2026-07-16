@@ -12,8 +12,8 @@ void testCancelExistingOrder()
     // Arrange
     OrderBook book;
 
-    book.addOrder({1, Side::Buy, 100, 5, 1});
-    book.addOrder({2, Side::Sell, 105, 8, 2});
+    book.addOrder({1, Side::Buy, OrderType::Limit, 100, 5, 1});
+    book.addOrder({2, Side::Sell, OrderType::Limit, 105, 8, 2});
 
     // Act
     bool result = book.cancelOrder(1);
@@ -64,8 +64,8 @@ void testCancelAfterPartialFill()
     // Arrange
     OrderBook book;
 
-    book.addOrder({1, Side::Sell, 100, 8, 1});
-    book.addOrder({2, Side::Buy, 100, 3, 2});
+    book.addOrder({1, Side::Sell, OrderType::Limit, 100, 8, 1});
+    book.addOrder({2, Side::Buy, OrderType::Limit, 100, 3, 2});
 
     // Act
 

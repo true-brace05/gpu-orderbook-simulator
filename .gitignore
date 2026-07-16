@@ -20,3 +20,16 @@ Makefile
 
 # Logs
 *.log
+
+# Executables
+main
+benchmark_insert
+benchmark_match
+benchmark_cancel
+test_matching
+test_cancel
+test_edge_cases
+benchmark_run
+
+# macOS
+.DS_Store

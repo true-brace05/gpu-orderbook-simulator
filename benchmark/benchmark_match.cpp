@@ -17,9 +17,10 @@ void benchmarkMatching(int numOrders)
         {
             i,
             Side::Sell,
+             OrderType::Limit,
             100,
             10,
-            i
+            static_cast<uint64_t>(i)
         });
     }
 
@@ -32,9 +33,10 @@ void benchmarkMatching(int numOrders)
         {
             numOrders + i,
             Side::Buy,
+             OrderType::Limit,
             100,
             10,
-            numOrders + i
+            static_cast<uint64_t>(numOrders + i)
         });
     }
 

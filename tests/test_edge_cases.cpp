@@ -14,7 +14,7 @@ void testInvalidPrice()
     OrderBook book;
 
     // Act
-    book.addOrder({1, Side::Buy, -100, 5, 1});
+    book.addOrder({1, Side::Buy, OrderType::Limit, -100, 5, 1});
 
     // Assert
     assert(book.isEmpty());
@@ -33,7 +33,7 @@ void testInvalidQuantity()
     OrderBook book;
 
     // Act
-    book.addOrder({1, Side::Buy, 100, -5, 1});
+    book.addOrder({1, Side::Buy, OrderType::Limit, 100, -5, 1});
 
     // Assert
     assert(book.isEmpty());
@@ -72,8 +72,8 @@ void testDuplicateOrderId()
     OrderBook book;
 
     // Act
-    book.addOrder({1, Side::Buy, 100, 5, 1});
-    book.addOrder({1, Side::Sell, 105, 3, 2});
+    book.addOrder({1, Side::Buy, OrderType::Limit, 100, 5, 1});
+    book.addOrder({1, Side::Sell, OrderType::Limit, 105, 3, 2});
 
     // Assert
 
