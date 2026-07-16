@@ -6,6 +6,13 @@
 
 void OrderBook::addOrder(const Order& order)
 {
+    if (hasOrder(order.id))
+{
+    std::cerr << "Duplicate Order ID.\n";
+    return;
+}
+
+
     if (order.quantity <= 0)
     {
         std::cerr << "Invalid quantity.\n";
@@ -196,4 +203,49 @@ std::cout << "=====================================\n";
     << '\n';
         }
     }
+}
+
+
+
+bool OrderBook::isEmpty() const
+{
+    return buyBook.empty() && sellBook.empty();
+}
+
+
+
+
+std::size_t OrderBook::getTotalOrders() const
+{
+    std::size_t totalOrders = 0;
+
+    for (const auto& [price, orders] : buyBook)
+    {
+        totalOrders += orders.size();
+    }
+
+    for (const auto& [price, orders] : sellBook)
+    {
+        totalOrders += orders.size();
+    }
+
+    return totalOrders;
+}
+
+bool OrderBook::hasOrder(int orderId) const
+{
+    return orderIndex.find(orderId) != orderIndex.end();
+}
+
+
+std::optional<Order> OrderBook::getOrder(int orderId) const
+{
+    auto it = orderIndex.find(orderId);
+
+    if (it == orderIndex.end())
+    {
+        return std::nullopt;
+    }
+
+    return *(it->second.iterator);
 }

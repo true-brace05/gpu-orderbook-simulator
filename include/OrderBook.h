@@ -4,6 +4,7 @@
 #include <list>
 #include <map>
 #include <unordered_map>
+#include <optional>
 
 #include "Order.h"
 
@@ -57,4 +58,13 @@ public:
     bool cancelOrder(int orderId);
 
     void printBook() const;
+
+    bool isEmpty() const;
+
+std::size_t getTotalOrders() const;
+
+bool hasOrder(int orderId) const;
+
+
+std::optional<Order> getOrder(int orderId) const;
 };
