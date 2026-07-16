@@ -44,6 +44,8 @@ private:
     // Order ID -> Location
     std::unordered_map<int, OrderLocation> orderIndex;
 
+    bool verbose = true;
+
 private:
 
     void matchBuyOrder(Order& order);
@@ -67,4 +69,6 @@ bool hasOrder(int orderId) const;
 
 
 std::optional<Order> getOrder(int orderId) const;
+
+void setVerbose(bool enabled);
 };

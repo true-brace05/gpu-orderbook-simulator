@@ -4,7 +4,8 @@
 int main()
 {
     OrderBook book;
-
+    
+    book.setVerbose(true);
 
     book.addOrder({1, Side::Buy, -100, 5, 1});
 book.addOrder({2, Side::Buy, 100, -5, 2});

@@ -74,7 +74,14 @@ void OrderBook::matchBuyOrder(Order& order)
         order.quantity -= tradeQuantity;
         restingOrder.quantity -= tradeQuantity;
 
-        std::cout << "TRADE -> " << tradeQuantity << " @ " << bestSell->first << '\n';
+        if (verbose)
+{
+    std::cout << "TRADE -> "
+              << tradeQuantity
+              << " @ "
+              << bestSell->first
+              << '\n';
+}
 
         if (restingOrder.quantity == 0)
 {
@@ -109,7 +116,14 @@ void OrderBook::matchSellOrder(Order& order)
         order.quantity -= tradeQuantity;
         restingOrder.quantity -= tradeQuantity;
 
-        std::cout << "TRADE -> " << tradeQuantity << " @ " << bestBuy->first << '\n';
+        if (verbose)
+{
+    std::cout << "TRADE -> "
+              << tradeQuantity
+              << " @ "
+              << bestBuy->first
+              << '\n';
+}
 
         if (restingOrder.quantity == 0)
 {
@@ -248,4 +262,9 @@ std::optional<Order> OrderBook::getOrder(int orderId) const
     }
 
     return *(it->second.iterator);
+}
+
+void OrderBook::setVerbose(bool enabled)
+{
+    verbose = enabled;
 }

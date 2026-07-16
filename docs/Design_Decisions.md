@@ -485,3 +485,22 @@ Each file focuses on one subsystem, making failures easier to locate and maintai
 ## Trade-off
 
 Slightly more files, but much better organization as the project grows.
+# Decision 032: Measure Before Optimizing
+
+## Problem
+
+Performance improvements should be based on measurements rather than assumptions.
+
+## Decision
+
+Introduce a dedicated benchmarking module that measures execution time under controlled workloads.
+
+## Why?
+
+- Prevents premature optimization.
+- Provides quantitative performance data.
+- Makes future optimizations measurable.
+
+## Trade-off
+
+Adds benchmarking code to the project but keeps it separate from production code.
