@@ -255,12 +255,7 @@ void OrderBook::processLimitOrder( Order order)
 
         if (order.quantity > 0)
         {
-            auto& ordersAtPrice = buyBook[order.price];
-            ordersAtPrice.push_back(order);
-            orderIndex[order.id] = {
-                Side::Buy,
-                order.price,
-                std::prev(ordersAtPrice.end())};
+           addBuyOrder(order);
         }
     }
     else
@@ -269,12 +264,7 @@ void OrderBook::processLimitOrder( Order order)
 
         if (order.quantity > 0)
         {
-            auto& ordersAtPrice = sellBook[order.price];
-            ordersAtPrice.push_back(order);
-            orderIndex[order.id] = {
-                Side::Sell,
-                order.price,
-                std::prev(ordersAtPrice.end())};
+            addSellOrder(order);
         }
     }
 }
@@ -284,3 +274,30 @@ void OrderBook::processMarketOrder(Order order)
     // TODO
 }
 
+void OrderBook::addBuyOrder(const Order& order)
+{
+    auto& ordersAtPrice = buyBook[order.price];
+
+    ordersAtPrice.push_back(order);
+
+    orderIndex[order.id] =
+    {
+        Side::Buy,
+        order.price,
+        std::prev(ordersAtPrice.end())
+    };
+}
+
+void OrderBook::addSellOrder(const Order& order)
+{
+    auto& ordersAtPrice = sellBook[order.price];
+
+    ordersAtPrice.push_back(order);
+
+    orderIndex[order.id] =
+    {
+        Side::Sell,
+        order.price,
+        std::prev(ordersAtPrice.end())
+    };
+}

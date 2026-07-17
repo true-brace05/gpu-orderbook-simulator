@@ -53,6 +53,8 @@ private:
 
     void matchBuyOrder(Order& order);
     void matchSellOrder(Order& order);
+    void addBuyOrder(const Order& order);
+void addSellOrder(const Order& order);
 
 public:
 
