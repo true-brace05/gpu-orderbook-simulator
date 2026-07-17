@@ -1,5 +1,6 @@
 #pragma once 
 #include "Types.h"
+#include <cstdint>
 
 struct Order{
     int id;

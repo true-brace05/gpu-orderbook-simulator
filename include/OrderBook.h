@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "Order.h"
+#include "dispatcher/OrderDispatcher.h"
 
 /*
 -----------------------------------------
@@ -33,6 +34,8 @@ price-time priority.
 */
 class OrderBook
 {
+private:
+    OrderDispatcher dispatcher;
 private:
 
     // Highest price first
@@ -71,4 +74,7 @@ bool hasOrder(int orderId) const;
 std::optional<Order> getOrder(int orderId) const;
 
 void setVerbose(bool enabled);
+
+void processLimitOrder(Order order);
+void processMarketOrder(Order order);
 };

@@ -6,6 +6,10 @@
 
 void OrderBook::addOrder(const Order& order)
 {
+// dispatcher.dispatch(*this, order);
+
+
+
     if (hasOrder(order.id))
 {
     std::cerr << "Duplicate Order ID.\n";
@@ -24,37 +28,11 @@ void OrderBook::addOrder(const Order& order)
         std::cerr << "Invalid price.\n";
         return;
     }
+    dispatcher.dispatch(*this, order);
 
-    Order workingOrder = order;
+    
 
-    if (workingOrder.side == Side::Buy)
-    {
-        matchBuyOrder(workingOrder);
-
-        if (workingOrder.quantity > 0)
-        {
-            auto& ordersAtPrice = buyBook[workingOrder.price];
-            ordersAtPrice.push_back(workingOrder);
-            orderIndex[workingOrder.id] = {
-                Side::Buy,
-                workingOrder.price,
-                std::prev(ordersAtPrice.end())};
-        }
-    }
-    else
-    {
-        matchSellOrder(workingOrder);
-
-        if (workingOrder.quantity > 0)
-        {
-            auto& ordersAtPrice = sellBook[workingOrder.price];
-            ordersAtPrice.push_back(workingOrder);
-            orderIndex[workingOrder.id] = {
-                Side::Sell,
-                workingOrder.price,
-                std::prev(ordersAtPrice.end())};
-        }
-    }
+    
 }
 
 void OrderBook::matchBuyOrder(Order& order)
@@ -268,3 +246,41 @@ void OrderBook::setVerbose(bool enabled)
 {
     verbose = enabled;
 }
+
+void OrderBook::processLimitOrder( Order order)
+{
+    if (order.side == Side::Buy)
+    {
+        matchBuyOrder(order);
+
+        if (order.quantity > 0)
+        {
+            auto& ordersAtPrice = buyBook[order.price];
+            ordersAtPrice.push_back(order);
+            orderIndex[order.id] = {
+                Side::Buy,
+                order.price,
+                std::prev(ordersAtPrice.end())};
+        }
+    }
+    else
+    {
+        matchSellOrder(order);
+
+        if (order.quantity > 0)
+        {
+            auto& ordersAtPrice = sellBook[order.price];
+            ordersAtPrice.push_back(order);
+            orderIndex[order.id] = {
+                Side::Sell,
+                order.price,
+                std::prev(ordersAtPrice.end())};
+        }
+    }
+}
+
+void OrderBook::processMarketOrder(Order order)
+{
+    // TODO
+}
+
