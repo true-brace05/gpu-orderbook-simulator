@@ -3,37 +3,35 @@
 
 int main()
 {
+   
     OrderBook book;
 
-    Order order1{
+    book.setVerbose(true);
+
+    // Resting sell order
+    book.addOrder({
         1,
-        Side::Buy,
-        100.0,
-        10,
-        1
-    };
-
-    Order order2{
-        2,
-        Side::Buy,
-        101.0,
-        5,
-        2
-    };
-
-    Order order3{
-        3,
         Side::Sell,
-        102.0,
-        8,
-        3
-    };
+        OrderType::Limit,
+        100,
+        5,
+        1
+    });
 
-    book.addOrder(order1);
-    book.addOrder(order2);
-    book.addOrder(order3);
-
+    std::cout << "Before Market Order\n";
     book.printBook();
 
-    return 0;
+    // Incoming market buy
+    book.addOrder({
+        2,
+        Side::Buy,
+        OrderType::Market,
+        0,
+        3,
+        2
+    });
+
+    std::cout << "\nAfter Market Order\n";
+    book.printBook();
+
 }

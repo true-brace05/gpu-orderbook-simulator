@@ -1,11 +1,18 @@
 #pragma once 
 #include "Types.h"
+#include <cstdint>
 
 struct Order{
-    int id ; 
-    Side side ;
-    double  price ;
-    int quantity ;
-    long long timestamp ;
+    int id;
+
+Side side;
+
+OrderType type;
+
+double price;
+
+int quantity;
+
+uint64_t timestamp;
 
 };
