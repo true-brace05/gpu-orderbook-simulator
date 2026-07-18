@@ -23,11 +23,11 @@ void OrderBook::addOrder(const Order& order)
         return;
     }
 
-    if (order.price <= 0)
-    {
-        std::cerr << "Invalid price.\n";
-        return;
-    }
+    if (order.type == OrderType::Limit && order.price <= 0)
+{
+    std::cerr << "Invalid price.\n";
+    return;
+}
     dispatcher.dispatch(*this, order);
 
     
@@ -41,10 +41,11 @@ void OrderBook::matchBuyOrder(Order& order)
     {
         auto bestSell = sellBook.begin();
 
-        if (bestSell->first > order.price)
-        {
-            break;
-        }
+        if (order.type == OrderType::Limit &&
+    bestSell->first > order.price)
+{
+    break;
+}
 
         Order& restingOrder = bestSell->second.front();
         const int tradeQuantity = std::min(order.quantity, restingOrder.quantity);
@@ -83,10 +84,11 @@ void OrderBook::matchSellOrder(Order& order)
     {
         auto bestBuy = buyBook.begin();
 
-        if (bestBuy->first < order.price)
-        {
-            break;
-        }
+        if (order.type == OrderType::Limit &&
+    bestBuy->first < order.price)
+{
+    break;
+}
 
         Order& restingOrder = bestBuy->second.front();
         const int tradeQuantity = std::min(order.quantity, restingOrder.quantity);
@@ -271,7 +273,17 @@ void OrderBook::processLimitOrder( Order order)
 
 void OrderBook::processMarketOrder(Order order)
 {
-    // TODO
+    
+    if (order.side == Side::Buy)
+    {
+        matchBuyOrder(order);
+    }
+    else
+    {
+        matchSellOrder(order);
+    }
+
+    // Remaining quantity is discarded.
 }
 
 void OrderBook::addBuyOrder(const Order& order)

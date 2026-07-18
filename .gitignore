@@ -1,16 +1,11 @@
 # macOS
 .DS_Store
 
-# Build directory
-build/
-
-# Executables
-main
-*.out
-*.exe
-
 # VS Code
 .vscode/
+
+# Build directory
+build/
 
 # CMake
 CMakeFiles/
@@ -18,18 +13,24 @@ CMakeCache.txt
 cmake_install.cmake
 Makefile
 
-# Logs
-*.log
+# Object / Libraries
+*.o
+*.a
 
 # Executables
 main
+*.out
+*.exe
+
 benchmark_insert
 benchmark_match
 benchmark_cancel
+
 test_matching
 test_cancel
 test_edge_cases
+
 benchmark_run
 
-# macOS
-.DS_Store
+# Logs
+*.log

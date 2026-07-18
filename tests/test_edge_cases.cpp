@@ -82,7 +82,30 @@ void testDuplicateOrderId()
     std::cout << "✓ PASS: Duplicate Order ID\n";
 }
 
+void testMarketOrderZeroPrice()
+{
+    printTestHeader("Market Order Zero Price");
 
+    OrderBook book;
+    book.setVerbose(false);
+
+    book.addOrder({
+        1,
+        Side::Buy,
+        OrderType::Market,
+        0,
+        10,
+        1
+    });
+
+    // Market order should not be rejected because of price = 0.
+    // Since the opposite book is empty, nothing should rest.
+
+    assert(book.isEmpty());
+    assert(book.getTotalOrders() == 0);
+
+    std::cout << "✓ PASS: Market Order Zero Price\n";
+}
 
 
 
@@ -95,6 +118,8 @@ int main()
     testCancelEmptyBook();
 
     testDuplicateOrderId();
+
+    testMarketOrderZeroPrice();
 
     std::cout << "\n=====================================\n";
     std::cout << "      ALL EDGE CASE TESTS PASSED\n";

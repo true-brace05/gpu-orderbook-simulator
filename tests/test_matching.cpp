@@ -133,6 +133,71 @@ void testNoMatch()
 
     std::cout << "✓ PASS: No Match\n";
 }
+void testMarketOrderCompleteFill()
+{
+    printTestHeader("Market Order Complete Fill");
+
+    OrderBook book;
+    book.setVerbose(true);
+
+    book.addOrder({
+        1,
+        Side::Sell,
+        OrderType::Limit,
+        100,
+        5,
+        1
+    });
+
+    book.addOrder({
+        2,
+        Side::Buy,
+        OrderType::Market,
+        0,
+        5,
+        2
+    });
+
+       
+
+    assert(book.isEmpty());
+
+    std::cout << "✓ PASS: Market Order Complete Fill\n";
+}
+
+void testMarketOrderPartialFill()
+{
+    printTestHeader("Market Order Partial Fill");
+
+    OrderBook book;
+    book.setVerbose(false);
+
+    book.addOrder({
+        1,
+        Side::Sell,
+        OrderType::Limit,
+        100,
+        5,
+        1
+    });
+
+    book.addOrder({
+        2,
+        Side::Buy,
+        OrderType::Market,
+        0,
+        10,
+        2
+    });
+
+    
+
+assert(book.isEmpty());
+    assert(book.getTotalOrders() == 0);
+
+    std::cout << "✓ PASS: Market Order Partial Fill\n";
+}
+
 
 int main()
 {
@@ -141,6 +206,8 @@ int main()
     testFIFO();
     testMultiPriceLevel();
     testNoMatch();
+    testMarketOrderCompleteFill();
+    testMarketOrderPartialFill();
 
     std::cout << "\n=====================================\n";
     std::cout << "      ALL MATCHING TESTS PASSED\n";
