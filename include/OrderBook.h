@@ -8,6 +8,10 @@
 
 #include "Order.h"
 #include "dispatcher/OrderDispatcher.h"
+#include <vector>
+#include "execution/ITradeListener.h"
+
+
 
 /*
 -----------------------------------------
@@ -22,6 +26,8 @@ struct OrderLocation
     Side side;
     double price;
     std::list<Order>::iterator iterator;
+    
+    
 };
 
 /*
@@ -48,6 +54,7 @@ private:
     std::unordered_map<int, OrderLocation> orderIndex;
 
     bool verbose = true;
+    std::vector<ITradeListener*> tradeListeners;
 
 private:
 
@@ -55,7 +62,7 @@ private:
     void matchSellOrder(Order& order);
     void addBuyOrder(const Order& order);
 void addSellOrder(const Order& order);
-
+void notifyTradeListeners(const Trade& trade);
 public:
 
     OrderBook() = default;
@@ -79,4 +86,6 @@ void setVerbose(bool enabled);
 
 void processLimitOrder(Order order);
 void processMarketOrder(Order order);
+
+void addTradeListener(ITradeListener* listener);
 };
