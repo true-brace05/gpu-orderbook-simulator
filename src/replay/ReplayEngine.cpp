@@ -1,4 +1,5 @@
 #include "replay/ReplayEngine.h"
+#include "strategy/IStrategy.h"
 
 ReplayEngine::ReplayEngine(OrderBook& book)
     : orderBook(book)
@@ -20,6 +21,17 @@ void ReplayEngine::process(const Event& event)
         case EventType::Modify:
             break;
     }
+
+    if (strategy)
+{
+    std::vector<Order> generatedOrders =
+        strategy->onEvent(event, orderBook);
+
+    for (const Order& order : generatedOrders)
+    {
+        orderBook.addOrder(order);
+    }
+}
 }
 
 void ReplayEngine::replay(IEventReader& reader)
@@ -28,4 +40,9 @@ void ReplayEngine::replay(IEventReader& reader)
     {
         process(reader.next());
     }
+}
+
+void ReplayEngine::setStrategy(IStrategy* newStrategy)
+{
+    strategy = newStrategy;
 }

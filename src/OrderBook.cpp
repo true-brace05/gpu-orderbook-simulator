@@ -53,7 +53,17 @@ void OrderBook::matchBuyOrder(Order& order)
         order.quantity -= tradeQuantity;
         restingOrder.quantity -= tradeQuantity;
 
-        if (verbose)
+       Trade trade;
+
+trade.buyOrderId = order.id;
+trade.sellOrderId = restingOrder.id;
+trade.price = bestSell->first;
+trade.quantity = tradeQuantity;
+trade.timestamp = std::max(order.timestamp, restingOrder.timestamp);
+
+notifyTradeListeners(trade);
+
+if (verbose)
 {
     std::cout << "TRADE -> "
               << tradeQuantity
@@ -96,7 +106,17 @@ void OrderBook::matchSellOrder(Order& order)
         order.quantity -= tradeQuantity;
         restingOrder.quantity -= tradeQuantity;
 
-        if (verbose)
+        Trade trade;
+
+trade.buyOrderId = restingOrder.id;
+trade.sellOrderId = order.id;
+trade.price = bestBuy->first;
+trade.quantity = tradeQuantity;
+trade.timestamp = std::max(order.timestamp, restingOrder.timestamp);
+
+notifyTradeListeners(trade);
+
+if (verbose)
 {
     std::cout << "TRADE -> "
               << tradeQuantity
@@ -312,4 +332,19 @@ void OrderBook::addSellOrder(const Order& order)
         order.price,
         std::prev(ordersAtPrice.end())
     };
+}
+
+
+void OrderBook::addTradeListener(ITradeListener* listener)
+{
+    tradeListeners.push_back(listener);
+}
+
+
+void OrderBook::notifyTradeListeners(const Trade& trade)
+{
+    for (ITradeListener* listener : tradeListeners)
+    {
+        listener->onTrade(trade);
+    }
 }

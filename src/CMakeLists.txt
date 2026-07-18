@@ -18,6 +18,10 @@ add_library(
     replay/readers/SyntheticReader.cpp
 
     replay/readers/CSVReader.cpp
+
+    strategy/PassiveBuyer.cpp
+
+    portfolio/Portfolio.cpp
 )
 
 # ---------------------------------------

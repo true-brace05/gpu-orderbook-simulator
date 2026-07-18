@@ -1,26 +1,29 @@
+# ==========================================================
 # macOS
+# ==========================================================
 .DS_Store
 
-# VS Code
-.vscode/
-
-# Build directory
+# ==========================================================
+# Build directories
+# ==========================================================
 build/
+cmake-build-*/
+out/
 
-# CMake
+# ==========================================================
+# CMake generated files
+# ==========================================================
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
+CTestTestfile.cmake
 Makefile
+compile_commands.json
 
-# Object / Libraries
-*.o
-*.a
-
-# Executables
+# ==========================================================
+# Generated executables (root)
+# ==========================================================
 main
-*.out
-*.exe
 
 benchmark_insert
 benchmark_match
@@ -29,8 +32,27 @@ benchmark_cancel
 test_matching
 test_cancel
 test_edge_cases
+test_replay
+test_csv_reader
+test_csv_replay
+test_strategy
+test_portfolio
+test_trade_listener
 
-benchmark_run
-
+# ==========================================================
 # Logs
+# ==========================================================
 *.log
+
+# ==========================================================
+# Editors
+# ==========================================================
+.vscode/
+.idea/
+
+# ==========================================================
+# Temporary files
+# ==========================================================
+*.swp
+*.swo
+*~

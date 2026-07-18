@@ -95,3 +95,46 @@ target_link_libraries(
 
     lob_engine
 )
+
+add_executable(
+    test_strategy
+
+    test_strategy.cpp
+)
+
+target_link_libraries(
+    test_strategy
+
+    PRIVATE
+
+    lob_engine
+)
+
+add_executable(
+    test_portfolio
+
+    test_portfolio.cpp
+)
+
+target_link_libraries(
+    test_portfolio
+
+    PRIVATE
+
+    lob_engine
+)
+
+
+add_executable(
+    test_trade_listener
+
+    test_trade_listener.cpp
+)
+
+target_link_libraries(
+    test_trade_listener
+
+    PRIVATE
+
+    lob_engine
+)
