@@ -504,3 +504,438 @@ Introduce a dedicated benchmarking module that measures execution time under con
 ## Trade-off
 
 Adds benchmarking code to the project but keeps it separate from production code.
+
+# Phase 1 v2 Design Decisions
+
+---
+
+# Decision 5: OrderType Abstraction
+
+## Problem
+
+Originally, every order entering the engine behaved as a Limit Order. This prevented the engine from supporting additional execution semantics such as Market Orders, IOC, FOK, or Iceberg Orders.
+
+Without an abstraction for order type, the matching engine would require significant modification whenever a new order type was introduced.
+
+---
+
+## Alternatives Considered
+
+### Option 1
+
+Maintain separate functions such as:
+
+- addLimitOrder()
+- addMarketOrder()
+
+Pros
+
+- Simple initially.
+
+Cons
+
+- Code duplication.
+- Difficult to maintain.
+- Logic diverges over time.
+
+---
+
+### Option 2
+
+Introduce an OrderType enum.
+
+```cpp
+enum class OrderType
+{
+    Limit,
+    Market
+};
+```
+
+---
+
+## Chosen Solution
+
+Introduce an OrderType enum and store it inside every Order object.
+
+Each order now carries its execution semantics together with the rest of its information.
+
+---
+
+## Advantages
+
+- Easily extensible.
+- Supports future order types.
+- Keeps Order self-contained.
+- Removes assumptions that every order is a Limit Order.
+
+---
+
+## Trade-offs
+
+- One additional enum field inside Order.
+- Slight increase in object size.
+
+---
+
+## Future Impact
+
+Future order types such as IOC, FOK, Stop Orders, and Iceberg Orders can be added without redesigning the Order structure.
+
+---
+
+# Decision 6: Dispatcher Architecture
+
+## Problem
+
+As additional order types are introduced, OrderBook::addOrder() would become increasingly filled with nested if-else or switch statements.
+
+The OrderBook would become responsible for both routing and matching.
+
+---
+
+## Alternatives Considered
+
+### Option 1
+
+Large if-else chain.
+
+Pros
+
+- Easy to implement.
+
+Cons
+
+- Poor scalability.
+- Difficult to maintain.
+
+---
+
+### Option 2
+
+switch(OrderType)
+
+Pros
+
+- Cleaner than multiple if statements.
+
+Cons
+
+- Requires modifying the dispatcher whenever a new order type is added.
+
+---
+
+### Option 3 (Chosen)
+
+Dispatcher + dedicated handlers.
+
+---
+
+## Chosen Solution
+
+Introduce an OrderDispatcher responsible for routing orders to specialized handlers.
+
+```
+Order
+
+↓
+
+OrderDispatcher
+
+↓
+
+LimitHandler
+MarketHandler
+```
+
+Each handler owns the logic for its specific order type.
+
+---
+
+## Advantages
+
+- Clear separation of responsibilities.
+- Easier to extend.
+- Cleaner architecture.
+- Smaller OrderBook class.
+
+---
+
+## Trade-offs
+
+- Additional files.
+- One extra function call before processing.
+
+---
+
+## Future Impact
+
+Supports future order types without significantly increasing the complexity of OrderBook.
+
+---
+
+# Decision 7: Handler-Based Processing
+
+## Problem
+
+Limit Orders and Market Orders have different validation rules and execution semantics.
+
+Keeping both inside one function would reduce readability and increase maintenance cost.
+
+---
+
+## Chosen Solution
+
+Introduce dedicated handler classes.
+
+```
+LimitHandler
+
+↓
+
+process()
+
+↓
+
+OrderBook
+```
+
+```
+MarketHandler
+
+↓
+
+process()
+
+↓
+
+OrderBook
+```
+
+Handlers validate incoming orders before delegating to the OrderBook.
+
+---
+
+## Advantages
+
+- Single responsibility.
+- Better organization.
+- Easier testing.
+- Independent evolution of handlers.
+
+---
+
+## Trade-offs
+
+- Slight increase in project size.
+
+---
+
+## Future Impact
+
+Adding IOCHandler, FOKHandler, or IcebergHandler follows the same pattern.
+
+---
+
+# Decision 8: Market Order Design
+
+## Problem
+
+Market Orders should execute immediately against the best available prices and should never remain inside the order book.
+
+---
+
+## Alternatives Considered
+
+### Option 1
+
+Implement an entirely separate matching algorithm.
+
+Pros
+
+- Independent implementation.
+
+Cons
+
+- Large amount of duplicated logic.
+
+---
+
+### Option 2 (Chosen)
+
+Reuse the existing matching engine.
+
+---
+
+## Chosen Solution
+
+Market Orders reuse the existing matching functions.
+
+The only behavioral difference is:
+
+- Ignore price comparison.
+- Never insert remaining quantity into the order book.
+
+---
+
+## Advantages
+
+- Minimal code duplication.
+- Identical matching behavior.
+- Easier maintenance.
+- Existing tests remain useful.
+
+---
+
+## Trade-offs
+
+Matching functions required small modifications to distinguish between Limit and Market Orders.
+
+---
+
+## Future Impact
+
+Future execution policies can reuse the same matching engine with different insertion rules.
+
+---
+
+# Decision 9: Separating Matching from Book Insertion
+
+## Problem
+
+Originally, addOrder() performed validation, matching, and insertion together.
+
+This mixed multiple responsibilities inside one function.
+
+---
+
+## Chosen Solution
+
+Split processing into two stages.
+
+```
+Validation
+
+↓
+
+Dispatcher
+
+↓
+
+Matching
+
+↓
+
+Insertion (Limit Orders Only)
+```
+
+Market Orders terminate after matching.
+
+Limit Orders continue to insertion if quantity remains.
+
+---
+
+## Advantages
+
+- Cleaner control flow.
+- Easier testing.
+- Reusable matching engine.
+
+---
+
+## Future Impact
+
+Supports future execution policies without rewriting matching logic.
+
+---
+
+# Decision 10: Modular CMake Build System
+
+## Problem
+
+The project previously required manually compiling every executable using long g++ commands.
+
+This approach becomes difficult to maintain as the project grows.
+
+---
+
+## Chosen Solution
+
+Adopt a modular CMake build system.
+
+Project structure:
+
+```
+Root
+│
+├── src/
+├── tests/
+├── benchmark/
+└── CMakeLists.txt
+```
+
+The core engine is compiled once as:
+
+```
+lob_engine
+```
+
+Executables link against this library instead of recompiling every source file.
+
+---
+
+## Advantages
+
+- Professional project structure.
+- Faster incremental builds.
+- Easier maintenance.
+- Simplified build commands.
+- Scalable architecture.
+
+---
+
+## Trade-offs
+
+Initial CMake setup required additional effort.
+
+---
+
+## Future Impact
+
+The modular build system provides a solid foundation for Replay Engine, NASDAQ ITCH parser, profiling tools, and future CUDA integration.
+
+---
+
+# Lessons Learned
+
+Several important architectural lessons emerged during Phase 1 v2.
+
+- Generalizing the matching engine proved more effective than implementing separate algorithms for each order type.
+- Separating routing from matching significantly improved readability.
+- Small, focused handler classes are easier to test and extend.
+- Building the project as a reusable library simplifies testing and benchmarking.
+- Investing in architecture early reduced future implementation complexity.
+# Replay Engine
+
+## Motivation
+
+Provide a generic event replay framework independent of the underlying data source.
+
+## Components
+
+- Event
+- EventType
+- IEventReader
+- ReplayEngine
+- SyntheticReader
+- CSVReader
+
+## Design
+
+ReplayEngine depends only on the IEventReader interface.
+
+Readers are responsible for producing Event objects.
+
+ReplayEngine translates Events into OrderBook operations.
+
+This allows additional readers (e.g. NASDAQ ITCH, FIX, binary feeds) without changing ReplayEngine.

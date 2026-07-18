@@ -11,3 +11,10 @@ enum class OrderType
     Limit,
     Market
 };
+
+enum class EventType
+{
+    Add,
+    Cancel,
+    Modify
+};
