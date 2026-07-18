@@ -12,6 +12,12 @@ add_library(
     handlers/LimitHandler.cpp
 
     handlers/MarketHandler.cpp
+
+    replay/ReplayEngine.cpp
+
+    replay/readers/SyntheticReader.cpp
+
+    replay/readers/CSVReader.cpp
 )
 
 # ---------------------------------------

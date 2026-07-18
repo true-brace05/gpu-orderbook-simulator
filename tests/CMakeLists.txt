@@ -51,3 +51,47 @@ target_link_libraries(
 
     lob_engine
 )
+
+
+add_executable(
+    test_replay
+
+    test_replay.cpp
+)
+
+target_link_libraries(
+    test_replay
+
+    PRIVATE
+
+    lob_engine
+)
+
+add_executable(
+    test_csv_reader
+
+    test_csv_reader.cpp
+)
+
+target_link_libraries(
+    test_csv_reader
+
+    PRIVATE
+
+    lob_engine
+)
+
+
+add_executable(
+    test_csv_replay
+
+    test_csv_replay.cpp
+)
+
+target_link_libraries(
+    test_csv_replay
+
+    PRIVATE
+
+    lob_engine
+)
