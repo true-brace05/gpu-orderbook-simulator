@@ -2,14 +2,32 @@
 
 void Portfolio::onBuy(double price, int quantity)
 {
+    if (position == 0)
+    {
+        averageEntryPrice = price;
+    }
+    else
+    {
+        averageEntryPrice =
+            ((averageEntryPrice * position) + (price * quantity))
+            / (position + quantity);
+    }
+
     position += quantity;
     cash -= price * quantity;
 }
 
 void Portfolio::onSell(double price, int quantity)
 {
+    realizedPnL += (price - averageEntryPrice) * quantity;
+
     position -= quantity;
     cash += price * quantity;
+
+    if (position == 0)
+    {
+        averageEntryPrice = 0.0;
+    }
 }
 
 int Portfolio::getPosition() const
@@ -24,10 +42,23 @@ double Portfolio::getCash() const
 
 #include "execution/Trade.h"   // only if not already indirectly included
 
-void Portfolio::onTrade(const Trade& trade)
+void Portfolio::onFill(const Fill& fill)
 {
-    // For now, assume this portfolio tracks the BUY side.
-    // We'll improve this design later.
+    if (fill.side == Side::Buy)
+    {
+        onBuy(fill.price, fill.quantity);
+    }
+    else
+    {
+        onSell(fill.price, fill.quantity);
+    }
+}
 
-    onBuy(trade.price, trade.quantity);
+double Portfolio::getRealizedPnL() const
+{
+    return realizedPnL;
+}
+double Portfolio::getAverageEntryPrice() const
+{
+    return averageEntryPrice;
 }
