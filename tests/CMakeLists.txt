@@ -138,3 +138,36 @@ target_link_libraries(
 
     lob_engine
 )
+
+add_executable(
+    test_backtester
+    test_backtester.cpp
+)
+
+target_link_libraries(
+    test_backtester
+    PRIVATE
+    lob_engine
+)
+
+add_executable(
+    test_pnl
+    test_pnl.cpp
+)
+
+target_link_libraries(
+    test_pnl
+    PRIVATE
+    lob_engine
+)
+
+add_executable(
+    test_risk
+    test_risk.cpp
+)
+
+target_link_libraries(
+    test_risk
+    PRIVATE
+    lob_engine
+)

@@ -37,12 +37,24 @@ void ReplayEngine::process(const Event& event)
 void ReplayEngine::replay(IEventReader& reader)
 {
     while (reader.hasNext())
+{
+    Event event = reader.next();
+
+    for (IEventListener* listener : eventListeners)
     {
-        process(reader.next());
+        listener->onEvent(event);
     }
+
+    process(event);
+}
 }
 
 void ReplayEngine::setStrategy(IStrategy* newStrategy)
 {
     strategy = newStrategy;
+}
+
+void ReplayEngine::addEventListener(IEventListener* listener)
+{
+    eventListeners.push_back(listener);
 }

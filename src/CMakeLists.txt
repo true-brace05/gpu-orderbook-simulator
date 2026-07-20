@@ -22,6 +22,14 @@ add_library(
     strategy/PassiveBuyer.cpp
 
     portfolio/Portfolio.cpp
+
+    backtest/Backtester.cpp
+
+    backtest/StatisticsCollector.cpp
+
+    execution/ExecutionEngine.cpp
+
+    risk/RiskEngine.cpp
 )
 
 # ---------------------------------------
