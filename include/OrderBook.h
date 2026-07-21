@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <optional>
 #include <vector>
-
+    #include <cstddef>    
 #include "Order.h"
 #include "dispatcher/OrderDispatcher.h"
 #include "execution/ITradeListener.h"
@@ -93,4 +93,14 @@ public:
     void processMarketOrder(Order order);
 
 void addTradeListener(ITradeListener* listener);
-};
+
+double getBestBidPrice() const;
+
+int getBestBidQuantity() const;
+
+double getBestAskPrice() const;
+
+int getBestAskQuantity() const;
+
+OrderBookSnapshot getSnapshot(std::size_t levels = 10) const;
+    };
