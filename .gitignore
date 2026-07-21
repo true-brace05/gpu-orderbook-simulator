@@ -20,6 +20,7 @@ compile_commands.json
 # ===========================
 main
 test_*
+!tests/test_*.cpp
 benchmark_*
 
 # ===========================

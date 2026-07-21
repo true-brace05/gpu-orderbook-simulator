@@ -59,10 +59,9 @@ private:
     void matchSellOrder(Order& order);
 
     void addBuyOrder(const Order& order);
-    void addSellOrder(const Order& order);
-
-    void notifyTradeListeners(const Trade& trade);
-
+void addSellOrder(const Order& order);
+bool replenishRestingIceberg(std::list<Order>& ordersAtPrice);
+void notifyTradeListeners(const Trade& trade);
 public:
     OrderBook() = default;
 
@@ -93,16 +92,5 @@ public:
 
     void processMarketOrder(Order order);
 
-    void addTradeListener(ITradeListener* listener);
-
-    double getBestBidPrice() const;
-
-int getBestBidQuantity() const;
-
-double getBestAskPrice() const;
-
-int getBestAskQuantity() const;
-
-OrderBookSnapshot getSnapshot(
-    std::size_t levels = 10) const;
+void addTradeListener(ITradeListener* listener);
 };

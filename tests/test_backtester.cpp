@@ -1,0 +1,57 @@
+#include <cassert>
+#include <iostream>
+#include <vector>
+
+#include "OrderBook.h"
+#include "backtest/Backtester.h"
+#include "replay/Event.h"
+#include "replay/ReplayEngine.h"
+#include "replay/readers/SyntheticReader.h"
+
+int main()
+{
+    OrderBook book;
+    ReplayEngine replay(book);
+    Backtester backtester(replay , book );
+
+    std::vector<Event> events =
+    {
+        {
+            1,
+            EventType::Add,
+            {1, Side::Buy, OrderType::Limit, 100, 5, 1},
+            -1
+        },
+        {
+            2,
+            EventType::Add,
+            {2, Side::Sell, OrderType::Limit, 100, 5, 2},
+            -1
+        }
+    };
+
+    SyntheticReader reader(std::move(events));
+
+    BacktestReport report = backtester.run(reader);
+
+    assert(report.tradesExecuted == 1);
+
+    assert(report.eventsProcessed == 2);
+
+    assert(report.runtime.count() >= 0);
+
+    if (report.ordersSubmitted != 2)
+    {
+        std::cerr << "Expected 2 submitted orders, received "
+                  << report.ordersSubmitted << '\n';
+        return 1;
+    }
+
+    (void)report;
+
+    assert(book.isEmpty());
+
+    std::cout << "Backtester test passed!\n";
+
+    return 0;
+}

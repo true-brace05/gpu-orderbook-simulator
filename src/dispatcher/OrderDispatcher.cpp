@@ -12,5 +12,9 @@ void OrderDispatcher::dispatch(OrderBook& book, const Order& order)
         case OrderType::Market:
             marketHandler.process(book, order);
             break;
+
+        case OrderType::Iceberg:
+            limitHandler.process(book, order);
+            break;
     }
 }

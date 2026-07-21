@@ -26,15 +26,5 @@ void ExecutionEngine::addFillListener(IFillListener* listener)
 
 void ExecutionEngine::onTrade(const Trade& trade)
 {
-    auto fill = processTrade(trade, Side::Buy);
-
-    if (!fill.has_value())
-    {
-        return;
-    }
-
-    for (IFillListener* listener : fillListeners)
-    {
-        listener->onFill(fill.value());
-    }
+    processTrade(trade, Side::Buy);
 }

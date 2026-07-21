@@ -20,7 +20,12 @@ BacktestReport StatisticsCollector::getReport() const
     return report;
 }
 
-void StatisticsCollector::onEvent(const Event&)
+void StatisticsCollector::onEvent(const Event& event)
 {
     ++report.eventsProcessed;
+
+    if (event.type == EventType::Add)
+    {
+        ++report.ordersSubmitted;
+    }
 }

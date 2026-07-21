@@ -9,13 +9,15 @@ enum class Side
 enum class OrderType
 {
     Limit,
-    Market
+    Market,
+    Iceberg
 };
 
 enum class EventType
 {
     Add,
     Cancel,
+    Modify,
     Delete,
     ExecuteVisible,
     ExecuteHidden,

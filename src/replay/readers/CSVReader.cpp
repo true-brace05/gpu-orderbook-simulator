@@ -37,7 +37,7 @@ Event CSVReader::next()
 
     if (line.empty())
     {
-        return {};
+        throw std::runtime_error("Malformed CSV row");
     }
 
     std::stringstream ss(line);
@@ -49,6 +49,11 @@ Event CSVReader::next()
     while (std::getline(ss, token, ','))
     {
         fields.push_back(token);
+    }
+
+    if (fields.size() != 7)
+    {
+        throw std::runtime_error("Malformed CSV row");
     }
 
    Event event;
@@ -122,6 +127,11 @@ event.order.quantity = std::stoi(fields[5]);
 
 // Order ID
 event.order.id = std::stoi(fields[6]);
+
+if (event.type == EventType::Cancel)
+{
+    event.orderId = event.order.id;
+}
 
 event.order.timestamp = event.timestamp;
 

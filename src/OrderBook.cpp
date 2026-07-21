@@ -23,11 +23,21 @@ void OrderBook::addOrder(const Order& order)
         return;
     }
 
-    if (order.type == OrderType::Limit && order.price <= 0)
+    if (order.type != OrderType::Market && order.price <= 0)
 {
     std::cerr << "Invalid price.\n";
     return;
 }
+
+    if (order.type == OrderType::Iceberg &&
+        (order.displayQuantity <= 0 ||
+         order.reserveQuantity <= 0 ||
+         order.quantity != order.displayQuantity))
+    {
+        // Version 1.0 accepts only a full initial display tranche.
+        std::cerr << "Invalid iceberg quantities.\n";
+        return;
+    }
     dispatcher.dispatch(*this, order);
 
     
@@ -41,7 +51,7 @@ void OrderBook::matchBuyOrder(Order& order)
     {
         auto bestSell = sellBook.begin();
 
-        if (order.type == OrderType::Limit &&
+        if (order.type != OrderType::Market &&
     bestSell->first > order.price)
 {
     break;
@@ -74,11 +84,14 @@ if (verbose)
 
         if (restingOrder.quantity == 0)
 {
-    const int restingOrderId = restingOrder.id;
+    if (!replenishRestingIceberg(bestSell->second))
+    {
+        const int restingOrderId = restingOrder.id;
 
-    orderIndex.erase(restingOrderId);
+        orderIndex.erase(restingOrderId);
 
-    bestSell->second.pop_front();
+        bestSell->second.pop_front();
+    }
 }
 
         if (bestSell->second.empty())
@@ -94,7 +107,7 @@ void OrderBook::matchSellOrder(Order& order)
     {
         auto bestBuy = buyBook.begin();
 
-        if (order.type == OrderType::Limit &&
+        if (order.type != OrderType::Market &&
     bestBuy->first < order.price)
 {
     break;
@@ -127,10 +140,13 @@ if (verbose)
 
         if (restingOrder.quantity == 0)
 {
-    const int restingOrderId = restingOrder.id;
+    if (!replenishRestingIceberg(bestBuy->second))
+    {
+        const int restingOrderId = restingOrder.id;
 
-    orderIndex.erase(restingOrderId);
-    bestBuy->second.pop_front();
+        orderIndex.erase(restingOrderId);
+        bestBuy->second.pop_front();
+    }
 }
 
         if (bestBuy->second.empty())
@@ -358,6 +374,31 @@ void OrderBook::addSellOrder(const Order& order)
         order.price,
         std::prev(ordersAtPrice.end())
     };
+}
+
+bool OrderBook::replenishRestingIceberg(std::list<Order>& ordersAtPrice)
+{
+    Order replenishedOrder = ordersAtPrice.front();
+
+    if (replenishedOrder.type != OrderType::Iceberg ||
+        replenishedOrder.displayQuantity <= 0 ||
+        replenishedOrder.reserveQuantity <= 0)
+    {
+        return false;
+    }
+
+    replenishedOrder.quantity = std::min(
+        replenishedOrder.displayQuantity,
+        replenishedOrder.reserveQuantity);
+    replenishedOrder.reserveQuantity -= replenishedOrder.quantity;
+
+    ordersAtPrice.pop_front();
+    ordersAtPrice.push_back(replenishedOrder);
+
+    orderIndex[replenishedOrder.id].iterator =
+        std::prev(ordersAtPrice.end());
+
+    return true;
 }
 
 

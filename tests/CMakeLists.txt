@@ -97,6 +97,62 @@ target_link_libraries(
 )
 
 add_executable(
+    test_csv_cancel
+
+    test_csv_cancel.cpp
+)
+
+target_link_libraries(
+    test_csv_cancel
+
+    PRIVATE
+
+    lob_engine
+)
+
+add_executable(
+    test_csv_parser_validation
+
+    test_csv_parser_validation.cpp
+)
+
+target_link_libraries(
+    test_csv_parser_validation
+
+    PRIVATE
+
+    lob_engine
+)
+
+add_executable(
+    test_execution_engine
+
+    test_execution_engine.cpp
+)
+
+target_link_libraries(
+    test_execution_engine
+
+    PRIVATE
+
+    lob_engine
+)
+
+add_executable(
+    test_iceberg
+
+    test_iceberg.cpp
+)
+
+target_link_libraries(
+    test_iceberg
+
+    PRIVATE
+
+    lob_engine
+)
+
+add_executable(
     test_strategy
 
     test_strategy.cpp
@@ -231,4 +287,35 @@ target_link_libraries(
     test_lobster_step_validation
     PRIVATE
     lob_engine
+)
+
+add_test(NAME test_matching COMMAND test_matching)
+add_test(NAME test_cancel COMMAND test_cancel)
+add_test(NAME test_edge_cases COMMAND test_edge_cases)
+add_test(NAME test_replay COMMAND test_replay)
+add_test(NAME test_csv_reader COMMAND test_csv_reader)
+add_test(NAME test_csv_replay COMMAND test_csv_replay)
+add_test(NAME test_csv_cancel COMMAND test_csv_cancel)
+add_test(NAME test_csv_parser_validation COMMAND test_csv_parser_validation)
+add_test(NAME test_execution_engine COMMAND test_execution_engine)
+add_test(NAME test_iceberg COMMAND test_iceberg)
+add_test(NAME test_strategy COMMAND test_strategy)
+add_test(NAME test_portfolio COMMAND test_portfolio)
+add_test(NAME test_trade_listener COMMAND test_trade_listener)
+add_test(NAME test_backtester COMMAND test_backtester)
+add_test(NAME test_pnl COMMAND test_pnl)
+add_test(NAME test_risk COMMAND test_risk)
+
+set_tests_properties(
+    test_csv_reader
+    test_csv_replay
+    PROPERTIES
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/tests"
+)
+
+set_tests_properties(
+    test_csv_cancel
+    test_csv_parser_validation
+    PROPERTIES
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
 )
