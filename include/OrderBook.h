@@ -5,13 +5,12 @@
 #include <map>
 #include <unordered_map>
 #include <optional>
+#include <vector>
 
 #include "Order.h"
 #include "dispatcher/OrderDispatcher.h"
-#include <vector>
 #include "execution/ITradeListener.h"
-
-
+#include "marketdata/OrderBookSnapshot.h"
 
 /*
 -----------------------------------------
@@ -26,8 +25,6 @@ struct OrderLocation
     Side side;
     double price;
     std::list<Order>::iterator iterator;
-    
-    
 };
 
 /*
@@ -42,8 +39,8 @@ class OrderBook
 {
 private:
     OrderDispatcher dispatcher;
-private:
 
+private:
     // Highest price first
     std::map<double, std::list<Order>, std::greater<double>> buyBook;
 
@@ -54,38 +51,58 @@ private:
     std::unordered_map<int, OrderLocation> orderIndex;
 
     bool verbose = true;
+
     std::vector<ITradeListener*> tradeListeners;
 
 private:
-
     void matchBuyOrder(Order& order);
     void matchSellOrder(Order& order);
-    void addBuyOrder(const Order& order);
-void addSellOrder(const Order& order);
-void notifyTradeListeners(const Trade& trade);
-public:
 
+    void addBuyOrder(const Order& order);
+    void addSellOrder(const Order& order);
+
+    void notifyTradeListeners(const Trade& trade);
+
+public:
     OrderBook() = default;
 
     void addOrder(const Order& order);
 
     bool cancelOrder(int orderId);
 
+    // NEW: Reduce an order's remaining quantity.
+    // If quantity becomes zero or negative,
+    // the order is removed from the book.
+    bool reduceOrderQuantity(
+        int orderId,
+        int quantity);
+
     void printBook() const;
 
     bool isEmpty() const;
 
-std::size_t getTotalOrders() const;
+    std::size_t getTotalOrders() const;
 
-bool hasOrder(int orderId) const;
+    bool hasOrder(int orderId) const;
 
+    std::optional<Order> getOrder(int orderId) const;
 
-std::optional<Order> getOrder(int orderId) const;
+    void setVerbose(bool enabled);
 
-void setVerbose(bool enabled);
+    void processLimitOrder(Order order);
 
-void processLimitOrder(Order order);
-void processMarketOrder(Order order);
+    void processMarketOrder(Order order);
 
-void addTradeListener(ITradeListener* listener);
+    void addTradeListener(ITradeListener* listener);
+
+    double getBestBidPrice() const;
+
+int getBestBidQuantity() const;
+
+double getBestAskPrice() const;
+
+int getBestAskQuantity() const;
+
+OrderBookSnapshot getSnapshot(
+    std::size_t levels = 10) const;
 };

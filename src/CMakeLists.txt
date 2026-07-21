@@ -35,6 +35,11 @@ add_library(
 performance/BenchmarkRunner.cpp
 
 performance/ReportPrinter.cpp
+
+marketdata/LOBSTERReader.cpp
+marketdata/LOBSTEROrderBookReader.cpp
+
+marketdata/LOBSTERValidator.cpp
 )
 
 # ---------------------------------------

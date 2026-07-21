@@ -6,7 +6,7 @@
 #include "replay/readers/IEventReader.h"
 #include "strategy/IStrategy.h"
 #include "replay/IEventListener.h"
-
+#include "replay/ReplayStatistics.h"
 
 class ReplayEngine
 {
@@ -18,6 +18,8 @@ private:
 
      std::vector<IEventListener*> eventListeners;
 
+     ReplayStatistics statistics;
+
 public:
     explicit ReplayEngine(OrderBook& book);
 
@@ -27,8 +29,11 @@ void addEventListener(IEventListener* listener);
 
     void replay(IEventReader& reader);
 
+void replay(
+    IEventReader& reader,
+    std::size_t maxEvents);
 
-
+const ReplayStatistics& getStatistics() const;
     void setStrategy(IStrategy* newStrategy);
     
 };
