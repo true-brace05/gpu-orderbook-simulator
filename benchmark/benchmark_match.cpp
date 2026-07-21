@@ -1,63 +1,94 @@
+#include "performance/BenchmarkRunner.h"
+#include "performance/ReportPrinter.h"
 
-#include "BenchmarkUtils.h"
 #include "OrderBook.h"
 #include "workloads.h"
 
 void benchmarkMatching(int numOrders)
 {
-    OrderBook book;
+    BenchmarkRunner runner("Matching Benchmark");
 
-    book.setVerbose(false);
-
-    // Fill book with SELL orders
-
-    for (int i = 1; i <= numOrders; ++i)
+    // ---------------------------------------
+    // Warm-up (NOT measured)
+    // ---------------------------------------
     {
-        book.addOrder(
+        OrderBook warmupBook;
+        warmupBook.setVerbose(false);
+
+        for (int i = 1; i <= numOrders; ++i)
         {
-            i,
-            Side::Sell,
-             OrderType::Limit,
-            100,
-            10,
-            static_cast<uint64_t>(i)
-        });
+            warmupBook.addOrder({
+                i,
+                Side::Sell,
+                OrderType::Limit,
+                100,
+                10,
+                static_cast<uint64_t>(i)
+            });
+        }
+
+        for (int i = 1; i <= numOrders; ++i)
+        {
+            warmupBook.addOrder({
+                numOrders + i,
+                Side::Buy,
+                OrderType::Limit,
+                100,
+                10,
+                static_cast<uint64_t>(numOrders + i)
+            });
+        }
     }
 
-    auto start =
-        std::chrono::high_resolution_clock::now();
+    constexpr int iterations = 5;
 
-    for (int i = 1; i <= numOrders; ++i)
+    for (int run = 0; run < iterations; ++run)
     {
-        book.addOrder(
+        OrderBook book;
+        book.setVerbose(false);
+
+        // Populate book with SELL orders
+        for (int i = 1; i <= numOrders; ++i)
         {
-            numOrders + i,
-            Side::Buy,
-             OrderType::Limit,
-            100,
-            10,
-            static_cast<uint64_t>(numOrders + i)
-        });
+            book.addOrder({
+                i,
+                Side::Sell,
+                OrderType::Limit,
+                100,
+                10,
+                static_cast<uint64_t>(i)
+            });
+        }
+
+        runner.reset();
+
+        runner.start();
+
+        // Matching benchmark
+        for (int i = 1; i <= numOrders; ++i)
+        {
+            book.addOrder({
+                numOrders + i,
+                Side::Buy,
+                OrderType::Limit,
+                100,
+                10,
+                static_cast<uint64_t>(numOrders + i)
+            });
+        }
+
+        runner.stop(numOrders);
     }
 
-    auto end =
-        std::chrono::high_resolution_clock::now();
-
-    auto duration =
-        std::chrono::duration_cast<
-            std::chrono::microseconds>(
-                end - start);
-
-    printBenchmarkResult(
-        "Matching Benchmark",
-        numOrders,
-        duration);
+    ReportPrinter::print(runner.result());
 }
 
 int main()
 {
-    for(int workload : workloads)
+    for (int workload : workloads)
     {
         benchmarkMatching(workload);
     }
+
+    return 0;
 }

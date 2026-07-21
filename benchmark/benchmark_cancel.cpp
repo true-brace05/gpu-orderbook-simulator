@@ -1,51 +1,76 @@
-#include "BenchmarkUtils.h"
 #include "OrderBook.h"
 #include "workloads.h"
-
+#include "performance/BenchmarkRunner.h"
+#include "performance/ReportPrinter.h"
 
 void benchmarkCancellation(int numOrders)
 {
-    OrderBook book;
+    BenchmarkRunner runner("Cancellation Benchmark");
 
-    for (int i = 1; i <= numOrders; ++i)
+    // ---------------------------------------
+    // Warm-up (NOT measured)
+    // ---------------------------------------
     {
-        book.addOrder(
+        OrderBook warmupBook;
+
+        for (int i = 1; i <= numOrders; ++i)
         {
-            i,
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            static_cast<uint64_t>(i)
-        });
+            warmupBook.addOrder({
+                i,
+                Side::Buy,
+                OrderType::Limit,
+                100,
+                10,
+                static_cast<uint64_t>(i)
+            });
+        }
+
+        for (int i = 1; i <= numOrders; ++i)
+        {
+            warmupBook.cancelOrder(i);
+        }
     }
 
-    auto start =
-        std::chrono::high_resolution_clock::now();
+    constexpr int iterations = 5;
 
-    for (int i = 1; i <= numOrders; ++i)
+    for (int run = 0; run < iterations; ++run)
     {
-        book.cancelOrder(i);
+        OrderBook book;
+
+        // Populate the order book
+        for (int i = 1; i <= numOrders; ++i)
+        {
+            book.addOrder({
+                i,
+                Side::Buy,
+                OrderType::Limit,
+                100,
+                10,
+                static_cast<uint64_t>(i)
+            });
+        }
+
+        runner.reset();
+
+        runner.start();
+
+        for (int i = 1; i <= numOrders; ++i)
+        {
+            book.cancelOrder(i);
+        }
+
+        runner.stop(numOrders);
     }
 
-    auto end =
-        std::chrono::high_resolution_clock::now();
-
-    auto duration =
-        std::chrono::duration_cast<
-            std::chrono::microseconds>(
-                end - start);
-
-    printBenchmarkResult(
-        "Cancellation Benchmark",
-        numOrders,
-        duration);
+    ReportPrinter::print(runner.result());
 }
 
 int main()
 {
-    for(int workload : workloads)
+    for (int workload : workloads)
     {
         benchmarkCancellation(workload);
     }
+
+    return 0;
 }

@@ -1,45 +1,66 @@
 #include "BenchmarkUtils.h"
 #include "OrderBook.h"
 #include "workloads.h"
+#include "performance/BenchmarkRunner.h"
+#include "performance/ReportPrinter.h"
 
 void benchmarkInsertion(int numOrders)
 {
-    OrderBook book;
+    BenchmarkRunner runner("Insertion Benchmark");
 
-    auto start =
-        std::chrono::high_resolution_clock::now();
-
-    for (int i = 1; i <= numOrders; ++i)
+    // -----------------------------
+    // Warm-up (NOT measured)
+    // -----------------------------
     {
-        book.addOrder(
+        OrderBook warmupBook;
+
+        for (int j = 1; j <= numOrders; ++j)
         {
-            i,
-            Side::Buy,
-             OrderType::Limit,
-            100,
-            10,
-            static_cast<uint64_t>(i)
-        });
+            warmupBook.addOrder({
+                j,
+                Side::Buy,
+                OrderType::Limit,
+                100,
+                10,
+                static_cast<uint64_t>(j)
+            });
+        }
     }
 
-    auto end =
-        std::chrono::high_resolution_clock::now();
+    constexpr int iterations = 5;
 
-    auto duration =
-        std::chrono::duration_cast<
-            std::chrono::microseconds>(
-                end - start);
+    for (int i = 0; i < iterations; ++i)
+    {
+        OrderBook book;
 
-    printBenchmarkResult(
-        "Insertion Benchmark",
-        numOrders,
-        duration);
+        runner.reset();
+
+        runner.start();
+
+        for (int j = 1; j <= numOrders; ++j)
+        {
+            book.addOrder({
+                j,
+                Side::Buy,
+                OrderType::Limit,
+                100,
+                10,
+                static_cast<uint64_t>(j)
+            });
+        }
+
+        runner.stop(numOrders);
+    }
+
+    ReportPrinter::print(runner.result());
 }
 
 int main()
 {
-    for(int workload : workloads)
+    for (int workload : workloads)
     {
         benchmarkInsertion(workload);
     }
+
+    return 0;
 }
