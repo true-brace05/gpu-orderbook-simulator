@@ -176,6 +176,32 @@ bool OrderBook::cancelOrder(const int orderId)
     return true;
 }
 
+bool OrderBook::reduceOrderQuantity(
+    int orderId,
+    int quantity)
+{
+    auto indexEntry = orderIndex.find(orderId);
+
+    if (indexEntry == orderIndex.end())
+    {
+        return false;
+    }
+
+    OrderLocation& location = indexEntry->second;
+
+    Order& order = *(location.iterator);
+
+    order.quantity -= quantity;
+
+    if (order.quantity <= 0)
+    {
+        return cancelOrder(orderId);
+    }
+
+    return true;
+}
+
+
 void OrderBook::printBook() const
 {
     std::cout << "\n";
@@ -347,4 +373,110 @@ void OrderBook::notifyTradeListeners(const Trade& trade)
     {
         listener->onTrade(trade);
     }
+}
+
+double OrderBook::getBestBidPrice() const
+{
+    if (buyBook.empty())
+    {
+        return 0.0;
+    }
+
+    return buyBook.begin()->first;
+}
+
+int OrderBook::getBestBidQuantity() const
+{
+    if (buyBook.empty())
+    {
+        return 0;
+    }
+
+    int quantity = 0;
+
+    for (const Order& order : buyBook.begin()->second)
+    {
+        quantity += order.quantity;
+    }
+
+    return quantity;
+}
+
+double OrderBook::getBestAskPrice() const
+{
+    if (sellBook.empty())
+    {
+        return 0.0;
+    }
+
+    return sellBook.begin()->first;
+}
+
+int OrderBook::getBestAskQuantity() const
+{
+    if (sellBook.empty())
+    {
+        return 0;
+    }
+
+    int quantity = 0;
+
+    for (const Order& order : sellBook.begin()->second)
+    {
+        quantity += order.quantity;
+    }
+
+    return quantity;
+}
+
+OrderBookSnapshot OrderBook::getSnapshot(
+    std::size_t levels) const
+{
+    OrderBookSnapshot snapshot;
+
+    std::size_t count = 0;
+
+    for (const auto& [price, orders] : buyBook)
+    {
+        if (count >= levels)
+        {
+            break;
+        }
+
+        int quantity = 0;
+
+        for (const Order& order : orders)
+        {
+            quantity += order.quantity;
+        }
+
+        snapshot.bids.push_back(
+            {price, quantity});
+
+        ++count;
+    }
+
+    count = 0;
+
+    for (const auto& [price, orders] : sellBook)
+    {
+        if (count >= levels)
+        {
+            break;
+        }
+
+        int quantity = 0;
+
+        for (const Order& order : orders)
+        {
+            quantity += order.quantity;
+        }
+
+        snapshot.asks.push_back(
+            {price, quantity});
+
+        ++count;
+    }
+
+    return snapshot;
 }

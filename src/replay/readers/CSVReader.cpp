@@ -65,9 +65,21 @@ else if (fields[1] == "Cancel")
 {
     event.type = EventType::Cancel;
 }
-else if (fields[1] == "Modify")
+else if (fields[1] == "Delete")
 {
-    event.type = EventType::Modify;
+    event.type = EventType::Delete;
+}
+else if (fields[1] == "ExecuteVisible")
+{
+    event.type = EventType::ExecuteVisible;
+}
+else if (fields[1] == "ExecuteHidden")
+{
+    event.type = EventType::ExecuteHidden;
+}
+else if (fields[1] == "TradingHalt")
+{
+    event.type = EventType::TradingHalt;
 }
 else
 {

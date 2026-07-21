@@ -16,5 +16,8 @@ enum class EventType
 {
     Add,
     Cancel,
-    Modify
+    Delete,
+    ExecuteVisible,
+    ExecuteHidden,
+    TradingHalt
 };

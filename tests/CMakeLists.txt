@@ -171,3 +171,64 @@ target_link_libraries(
     PRIVATE
     lob_engine
 )
+add_executable(
+    test_lobster_reader
+
+    test_lobster_reader.cpp
+)
+
+target_link_libraries(
+    test_lobster_reader
+
+    PRIVATE
+
+    lob_engine
+)
+
+add_executable(
+    test_lobster_replay
+
+    test_lobster_replay.cpp
+)
+
+target_link_libraries(
+    test_lobster_replay
+
+    PRIVATE
+
+    lob_engine
+)
+add_executable(
+    test_lobster_validator
+
+    test_lobster_validator.cpp
+)
+target_link_libraries(
+    test_lobster_validator
+
+    PRIVATE
+
+    lob_engine
+)
+
+add_executable(
+    test_lobster_validation
+    test_lobster_validation.cpp
+)
+
+target_link_libraries(
+    test_lobster_validation
+    PRIVATE
+    lob_engine
+)
+
+add_executable(
+    test_lobster_step_validation
+    test_lobster_step_validation.cpp
+)
+
+target_link_libraries(
+    test_lobster_step_validation
+    PRIVATE
+    lob_engine
+)
