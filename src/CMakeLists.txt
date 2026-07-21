@@ -30,6 +30,11 @@ add_library(
     execution/ExecutionEngine.cpp
 
     risk/RiskEngine.cpp
+
+    performance/Timer.cpp
+performance/BenchmarkRunner.cpp
+
+performance/ReportPrinter.cpp
 )
 
 # ---------------------------------------
