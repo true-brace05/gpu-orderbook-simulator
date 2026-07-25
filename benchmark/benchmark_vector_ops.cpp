@@ -117,8 +117,9 @@ int main()
 
             auto t0_gpu = std::chrono::high_resolution_clock::now();
 
-            d_A.copyFromHost(h_A.data(), N);
-            d_B.copyFromHost(h_B.data(), N);
+            // Queue Host -> Device transfers on CUDAContext stream
+            d_A.copyFromHostAsync(h_A.data(), N, context.getStream());
+            d_B.copyFromHostAsync(h_B.data(), N, context.getStream());
 
             // --- GPU Kernel Timing (CUDAContext Events) ---
             context.startTimer();
@@ -126,7 +127,11 @@ int main()
             context.stopTimer();
             float kernelTimeMs = context.elapsedMilliseconds();
 
-            d_C.copyToHost(h_C_gpu.data(), N);
+            // Queue Device -> Host transfer on CUDAContext stream
+            d_C.copyToHostAsync(h_C_gpu.data(), N, context.getStream());
+
+            // Single synchronization point at the end of the pipeline
+            context.synchronize();
 
             auto t1_gpu = std::chrono::high_resolution_clock::now();
             double totalGpuTimeMs = std::chrono::duration<double, std::milli>(t1_gpu - t0_gpu).count();

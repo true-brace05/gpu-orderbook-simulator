@@ -93,6 +93,17 @@ public:
     void copyFromHost(const T* hostData, std::size_t count);
 
     /**
+     * @brief Asynchronously copies count elements from host CPU memory to GPU device memory on specified CUDA stream.
+     * Throws std::invalid_argument if hostData is nullptr, count == 0, or count exceeds elementCount.
+     * Throws std::runtime_error if cudaMemcpyAsync fails.
+     *
+     * @param hostData Pointer to source host memory.
+     * @param count Number of elements to copy.
+     * @param stream CUDA stream handle.
+     */
+    void copyFromHostAsync(const T* hostData, std::size_t count, cudaStream_t stream);
+
+    /**
      * @brief Synchronously copies count elements from GPU device memory to host CPU memory.
      * Throws std::invalid_argument if hostData is nullptr, count == 0, or count exceeds elementCount.
      * Throws std::runtime_error if cudaMemcpy fails.
@@ -101,6 +112,17 @@ public:
      * @param count Number of elements to copy.
      */
     void copyToHost(T* hostData, std::size_t count) const;
+
+    /**
+     * @brief Asynchronously copies count elements from GPU device memory to host CPU memory on specified CUDA stream.
+     * Throws std::invalid_argument if hostData is nullptr, count == 0, or count exceeds elementCount.
+     * Throws std::runtime_error if cudaMemcpyAsync fails.
+     *
+     * @param hostData Pointer to destination host memory.
+     * @param count Number of elements to copy.
+     * @param stream CUDA stream handle.
+     */
+    void copyToHostAsync(T* hostData, std::size_t count, cudaStream_t stream) const;
 
     /**
      * @brief Fills the allocated GPU memory buffer with zeros using cudaMemset.
@@ -249,6 +271,33 @@ void DeviceBuffer<T>::copyFromHost(const T* hostData, std::size_t count)
 }
 
 template <typename T>
+void DeviceBuffer<T>::copyFromHostAsync(const T* hostData, std::size_t count, cudaStream_t stream)
+{
+    if (count == 0)
+    {
+        throw std::invalid_argument("DeviceBuffer::copyFromHostAsync: Copy count cannot be zero");
+    }
+
+    if (hostData == nullptr)
+    {
+        throw std::invalid_argument("DeviceBuffer::copyFromHostAsync: hostData pointer cannot be null");
+    }
+
+    if (count > elementCount || devicePtr == nullptr)
+    {
+        throw std::invalid_argument(
+            "DeviceBuffer::copyFromHostAsync: Copy count (" + std::to_string(count) +
+            ") exceeds allocated buffer capacity (" + std::to_string(elementCount) + ")"
+        );
+    }
+
+    detail::checkDeviceBufferCudaError(
+        cudaMemcpyAsync(devicePtr, hostData, count * sizeof(T), cudaMemcpyHostToDevice, stream),
+        "Failed asynchronous cudaMemcpyAsync Host-to-Device in DeviceBuffer::copyFromHostAsync"
+    );
+}
+
+template <typename T>
 void DeviceBuffer<T>::copyToHost(T* hostData, std::size_t count) const
 {
     if (count == 0)
@@ -272,6 +321,33 @@ void DeviceBuffer<T>::copyToHost(T* hostData, std::size_t count) const
     detail::checkDeviceBufferCudaError(
         cudaMemcpy(hostData, devicePtr, count * sizeof(T), cudaMemcpyDeviceToHost),
         "Failed synchronous cudaMemcpy Device-to-Host in DeviceBuffer::copyToHost"
+    );
+}
+
+template <typename T>
+void DeviceBuffer<T>::copyToHostAsync(T* hostData, std::size_t count, cudaStream_t stream) const
+{
+    if (count == 0)
+    {
+        throw std::invalid_argument("DeviceBuffer::copyToHostAsync: Copy count cannot be zero");
+    }
+
+    if (hostData == nullptr)
+    {
+        throw std::invalid_argument("DeviceBuffer::copyToHostAsync: hostData pointer cannot be null");
+    }
+
+    if (count > elementCount || devicePtr == nullptr)
+    {
+        throw std::invalid_argument(
+            "DeviceBuffer::copyToHostAsync: Copy count (" + std::to_string(count) +
+            ") exceeds allocated buffer capacity (" + std::to_string(elementCount) + ")"
+        );
+    }
+
+    detail::checkDeviceBufferCudaError(
+        cudaMemcpyAsync(hostData, devicePtr, count * sizeof(T), cudaMemcpyDeviceToHost, stream),
+        "Failed asynchronous cudaMemcpyAsync Device-to-Host in DeviceBuffer::copyToHostAsync"
     );
 }
 

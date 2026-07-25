@@ -23,8 +23,7 @@ void cpuVectorAdd(const std::vector<float>& A, const std::vector<float>& B, std:
 }
 
 /**
- * @brief Helper to validate element-by-element match between GPU result and CPU reference,
- * with detailed diagnostics printed on the first mismatch.
+ * @brief Helper to validate element-by-element match between GPU result and CPU reference.
  */
 bool verifyResults(
     const std::vector<float>& gpuResult,
@@ -60,7 +59,7 @@ bool verifyResults(
 }
 
 /**
- * @brief Test 1: Small vectors (N = 16).
+ * @brief Test 1: Small vectors (N = 16) using asynchronous stream pipeline.
  */
 bool testSmallVector(CUDAContext& context)
 {
@@ -81,19 +80,21 @@ bool testSmallVector(CUDAContext& context)
     DeviceBuffer<float> d_B(N);
     DeviceBuffer<float> d_C(N);
 
-    d_A.copyFromHost(h_A.data(), N);
-    d_B.copyFromHost(h_B.data(), N);
+    d_A.copyFromHostAsync(h_A.data(), N, context.getStream());
+    d_B.copyFromHostAsync(h_B.data(), N, context.getStream());
 
     vectorAdd(d_A, d_B, d_C, context);
 
     std::vector<float> h_C_gpu(N);
-    d_C.copyToHost(h_C_gpu.data(), N);
+    d_C.copyToHostAsync(h_C_gpu.data(), N, context.getStream());
+
+    context.synchronize();
 
     return verifyResults(h_C_gpu, h_C_cpu, h_A, h_B);
 }
 
 /**
- * @brief Test 2: Large vectors (N = 1,000,000).
+ * @brief Test 2: Large vectors (N = 1,000,000) using asynchronous stream pipeline.
  */
 bool testLargeVector(CUDAContext& context)
 {
@@ -114,19 +115,21 @@ bool testLargeVector(CUDAContext& context)
     DeviceBuffer<float> d_B(N);
     DeviceBuffer<float> d_C(N);
 
-    d_A.copyFromHost(h_A.data(), N);
-    d_B.copyFromHost(h_B.data(), N);
+    d_A.copyFromHostAsync(h_A.data(), N, context.getStream());
+    d_B.copyFromHostAsync(h_B.data(), N, context.getStream());
 
     vectorAdd(d_A, d_B, d_C, context);
 
     std::vector<float> h_C_gpu(N);
-    d_C.copyToHost(h_C_gpu.data(), N);
+    d_C.copyToHostAsync(h_C_gpu.data(), N, context.getStream());
+
+    context.synchronize();
 
     return verifyResults(h_C_gpu, h_C_cpu, h_A, h_B);
 }
 
 /**
- * @brief Test 3: Random vectors (N = 65,536).
+ * @brief Test 3: Random vectors (N = 65,536) using asynchronous stream pipeline.
  */
 bool testRandomVector(CUDAContext& context)
 {
@@ -150,13 +153,15 @@ bool testRandomVector(CUDAContext& context)
     DeviceBuffer<float> d_B(N);
     DeviceBuffer<float> d_C(N);
 
-    d_A.copyFromHost(h_A.data(), N);
-    d_B.copyFromHost(h_B.data(), N);
+    d_A.copyFromHostAsync(h_A.data(), N, context.getStream());
+    d_B.copyFromHostAsync(h_B.data(), N, context.getStream());
 
     vectorAdd(d_A, d_B, d_C, context);
 
     std::vector<float> h_C_gpu(N);
-    d_C.copyToHost(h_C_gpu.data(), N);
+    d_C.copyToHostAsync(h_C_gpu.data(), N, context.getStream());
+
+    context.synchronize();
 
     return verifyResults(h_C_gpu, h_C_cpu, h_A, h_B);
 }
