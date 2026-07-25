@@ -309,6 +309,22 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
     )
 
     add_test(NAME test_hello_gpu COMMAND test_hello_gpu)
+
+    add_executable(
+        test_device_buffer
+
+        test_device_buffer.cpp
+    )
+
+    target_link_libraries(
+        test_device_buffer
+
+        PRIVATE
+
+        cuda_core
+    )
+
+    add_test(NAME test_device_buffer COMMAND test_device_buffer)
 endif()
 
 add_test(NAME test_matching COMMAND test_matching)
