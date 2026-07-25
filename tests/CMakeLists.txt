@@ -289,6 +289,28 @@ target_link_libraries(
     lob_engine
 )
 
+# ---------------------------------------
+# Optional GPU Hello Kernel Test
+# ---------------------------------------
+
+if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
+    add_executable(
+        test_hello_gpu
+
+        test_hello_gpu.cpp
+    )
+
+    target_link_libraries(
+        test_hello_gpu
+
+        PRIVATE
+
+        cuda_core
+    )
+
+    add_test(NAME test_hello_gpu COMMAND test_hello_gpu)
+endif()
+
 add_test(NAME test_matching COMMAND test_matching)
 add_test(NAME test_cancel COMMAND test_cancel)
 add_test(NAME test_edge_cases COMMAND test_edge_cases)

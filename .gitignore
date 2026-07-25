@@ -55,4 +55,9 @@ benchmark_*
 # ===========================
 # Market Data Cache
 # ===========================
-data/lobster/.cache/
+data/lobster/.cache/.cache/
+
+# ===========================
+# Build directories
+# ===========================
+.cache/
