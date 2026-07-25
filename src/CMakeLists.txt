@@ -1,5 +1,5 @@
 # ---------------------------------------
-# Core Engine Library
+# Core Engine Library (CPU Only)
 # ---------------------------------------
 
 add_library(
@@ -32,14 +32,14 @@ add_library(
     risk/RiskEngine.cpp
 
     performance/Timer.cpp
-performance/BenchmarkRunner.cpp
+    performance/BenchmarkRunner.cpp
 
-performance/ReportPrinter.cpp
+    performance/ReportPrinter.cpp
 
-marketdata/LOBSTERReader.cpp
-marketdata/LOBSTEROrderBookReader.cpp
+    marketdata/LOBSTERReader.cpp
+    marketdata/LOBSTEROrderBookReader.cpp
 
-marketdata/LOBSTERValidator.cpp
+    marketdata/LOBSTERValidator.cpp
 )
 
 # ---------------------------------------
@@ -53,6 +53,35 @@ target_include_directories(
 
     ${PROJECT_SOURCE_DIR}/include
 )
+
+# ---------------------------------------
+# CUDA Core Library (Optional)
+# ---------------------------------------
+
+if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
+    add_library(
+        cuda_core
+
+        cuda/CUDAContext.cu
+        cuda/DeviceBuffer.cu
+    )
+
+    target_include_directories(
+        cuda_core
+
+        PUBLIC
+
+        ${PROJECT_SOURCE_DIR}/include
+    )
+
+    target_compile_definitions(
+        cuda_core
+
+        PRIVATE
+
+        LOB_ENABLE_CUDA
+    )
+endif()
 
 # ---------------------------------------
 # Main Executable

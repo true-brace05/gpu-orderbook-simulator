@@ -33,6 +33,37 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
 endif()
 
 # ---------------------------------------
+# Optional CUDA Support
+# ---------------------------------------
+option(ENABLE_CUDA "Enable CUDA acceleration" ON)
+
+if(ENABLE_CUDA)
+    include(CheckLanguage)
+    check_language(CUDA)
+
+    if(CMAKE_CUDA_COMPILER)
+        enable_language(CUDA)
+
+        # Set CUDA standard
+        set(CMAKE_CUDA_STANDARD 17)
+        set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
+        # Set explicit CUDA target architectures (Turing, Ampere, Ada Lovelace, Hopper)
+        if(NOT CMAKE_CUDA_ARCHITECTURES)
+            set(CMAKE_CUDA_ARCHITECTURES 75 80 86 89 90)
+        endif()
+
+        message(STATUS "CUDA support enabled. Compiler: ${CMAKE_CUDA_COMPILER}")
+        message(STATUS "CUDA Target Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
+    else()
+        message(STATUS "CUDA compiler not found. Building CPU-only mode.")
+        set(ENABLE_CUDA OFF CACHE BOOL "Enable CUDA acceleration" FORCE)
+    endif()
+else()
+    message(STATUS "CUDA support disabled by configuration.")
+endif()
+
+# ---------------------------------------
 # Enable Testing
 # ---------------------------------------
 enable_testing()
