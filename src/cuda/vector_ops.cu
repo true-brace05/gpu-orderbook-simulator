@@ -68,5 +68,12 @@ void vectorAdd(
         nA
     );
 
+    // Check for immediate kernel launch errors (e.g. invalid grid/block configuration)
+    detail::checkDeviceBufferCudaError(
+        cudaGetLastError(),
+        "Failed to launch vectorAddKernel"
+    );
+
+    // Synchronize CUDA stream
     context.synchronize();
 }

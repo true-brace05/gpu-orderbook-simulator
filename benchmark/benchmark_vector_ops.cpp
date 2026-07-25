@@ -24,19 +24,35 @@ void cpuVectorAdd(const std::vector<float>& A, const std::vector<float>& B, std:
 }
 
 /**
- * @brief Helper to validate element-by-element match between GPU result and CPU reference.
+ * @brief Helper to validate element-by-element match between GPU result and CPU reference,
+ * with detailed diagnostics printed on the first mismatch.
  */
-bool verifyResults(const std::vector<float>& gpuResult, const std::vector<float>& cpuReference, float tolerance = 1e-5f)
+bool verifyResults(
+    const std::vector<float>& gpuResult,
+    const std::vector<float>& cpuReference,
+    const std::vector<float>& h_A,
+    const std::vector<float>& h_B,
+    float tolerance = 1e-5f)
 {
     if (gpuResult.size() != cpuReference.size())
     {
+        std::cerr << "  Failure: Size mismatch between GPU result (" << gpuResult.size()
+                  << ") and CPU reference (" << cpuReference.size() << ")\n";
         return false;
     }
 
     for (std::size_t i = 0; i < gpuResult.size(); ++i)
     {
-        if (std::abs(gpuResult[i] - cpuReference[i]) > tolerance)
+        float diff = std::abs(gpuResult[i] - cpuReference[i]);
+        if (diff > tolerance)
         {
+            std::cerr << "\n  [BENCHMARK MISMATCH DETECTED]\n"
+                      << "    First mismatching index : " << i << '\n'
+                      << "    Expected value (CPU)   : " << cpuReference[i] << '\n'
+                      << "    Actual value (GPU)     : " << gpuResult[i] << '\n'
+                      << "    Input A[" << i << "]             : " << (i < h_A.size() ? std::to_string(h_A[i]) : "N/A") << '\n'
+                      << "    Input B[" << i << "]             : " << (i < h_B.size() ? std::to_string(h_B[i]) : "N/A") << '\n'
+                      << "    Absolute Difference    : " << diff << '\n';
             return false;
         }
     }
@@ -116,7 +132,7 @@ int main()
             double totalGpuTimeMs = std::chrono::duration<double, std::milli>(t1_gpu - t0_gpu).count();
 
             // --- Verification ---
-            bool isCorrect = verifyResults(h_C_gpu, h_C_cpu);
+            bool isCorrect = verifyResults(h_C_gpu, h_C_cpu, h_A, h_B);
             double speedup = (kernelTimeMs > 0.0f) ? (cpuTimeMs / kernelTimeMs) : 0.0;
 
             std::cout << std::left
