@@ -22,6 +22,7 @@ main
 test_*
 !tests/test_*.cpp
 benchmark_*
+!benchmark/benchmark_*.cpp
 
 # ===========================
 # Object files

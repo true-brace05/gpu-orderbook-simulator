@@ -51,3 +51,23 @@ target_link_libraries(
 
     lob_engine
 )
+
+# ---------------------------------------
+# Vector Operations Benchmark (Optional CUDA)
+# ---------------------------------------
+
+if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
+    add_executable(
+        benchmark_vector_ops
+
+        benchmark_vector_ops.cpp
+    )
+
+    target_link_libraries(
+        benchmark_vector_ops
+
+        PRIVATE
+
+        cuda_core
+    )
+endif()

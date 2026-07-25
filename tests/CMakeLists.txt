@@ -325,6 +325,22 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
     )
 
     add_test(NAME test_device_buffer COMMAND test_device_buffer)
+
+    add_executable(
+        test_vector_ops
+
+        test_vector_ops.cpp
+    )
+
+    target_link_libraries(
+        test_vector_ops
+
+        PRIVATE
+
+        cuda_core
+    )
+
+    add_test(NAME test_vector_ops COMMAND test_vector_ops)
 endif()
 
 add_test(NAME test_matching COMMAND test_matching)
