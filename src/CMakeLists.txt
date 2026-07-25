@@ -76,6 +76,14 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
         ${PROJECT_SOURCE_DIR}/include
     )
 
+    target_link_libraries(
+        cuda_core
+
+        PUBLIC
+
+        CUDA::cudart
+    )
+
     target_compile_definitions(
         cuda_core
 

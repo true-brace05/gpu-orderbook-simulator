@@ -43,6 +43,7 @@ if(ENABLE_CUDA)
 
     if(CMAKE_CUDA_COMPILER)
         enable_language(CUDA)
+        find_package(CUDAToolkit REQUIRED)
 
         # Set CUDA standard
         set(CMAKE_CUDA_STANDARD 17)
