@@ -71,6 +71,8 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
         cuda/EventClassifier.cu
         cuda/PriceLevelBuffer.cu
         cuda/PriceLevelBuilder.cu
+        cuda/TradeBuffer.cu
+        cuda/GPUMatchingEngine.cu
         cuda/hello_kernel.cu
         cuda/vector_ops.cu
     )

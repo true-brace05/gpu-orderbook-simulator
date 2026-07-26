@@ -126,4 +126,18 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
 
         cuda_core
     )
+
+    add_executable(
+        benchmark_gpu_matching_engine
+
+        benchmark_gpu_matching_engine.cpp
+    )
+
+    target_link_libraries(
+        benchmark_gpu_matching_engine
+
+        PRIVATE
+
+        cuda_core
+    )
 endif()

@@ -405,6 +405,22 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
     )
 
     add_test(NAME test_price_level_builder COMMAND test_price_level_builder)
+
+    add_executable(
+        test_gpu_matching_engine
+
+        test_gpu_matching_engine.cpp
+    )
+
+    target_link_libraries(
+        test_gpu_matching_engine
+
+        PRIVATE
+
+        cuda_core
+    )
+
+    add_test(NAME test_gpu_matching_engine COMMAND test_gpu_matching_engine)
 endif()
 
 add_test(NAME test_matching COMMAND test_matching)
