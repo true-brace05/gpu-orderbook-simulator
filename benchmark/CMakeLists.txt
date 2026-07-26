@@ -112,4 +112,18 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
 
         cuda_core
     )
+
+    add_executable(
+        benchmark_price_level_builder
+
+        benchmark_price_level_builder.cpp
+    )
+
+    target_link_libraries(
+        benchmark_price_level_builder
+
+        PRIVATE
+
+        cuda_core
+    )
 endif()

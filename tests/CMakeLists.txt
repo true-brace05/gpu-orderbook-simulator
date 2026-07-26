@@ -389,6 +389,22 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
     )
 
     add_test(NAME test_event_classifier COMMAND test_event_classifier)
+
+    add_executable(
+        test_price_level_builder
+
+        test_price_level_builder.cpp
+    )
+
+    target_link_libraries(
+        test_price_level_builder
+
+        PRIVATE
+
+        cuda_core
+    )
+
+    add_test(NAME test_price_level_builder COMMAND test_price_level_builder)
 endif()
 
 add_test(NAME test_matching COMMAND test_matching)
