@@ -43,133 +43,168 @@ __global__ void matchAddOrdersKernel(
     int* gpuStats,
     double tickSize)
 {
-    std::size_t threadIdxGlobal = static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
-    if (threadIdxGlobal >= numAddEvents)
-    {
-        return;
-    }
-
-    int addIdx = addIndices[threadIdxGlobal];
-    int incId = incomingSoA.orderIds[addIdx];
-    uint8_t incSide = incomingSoA.sides[addIdx];
-    double incPrice = incomingSoA.prices[addIdx];
-    uint32_t incTick = static_cast<uint32_t>(llround(incPrice / tickSize));
-    int incQty = incomingSoA.quantities[addIdx];
-    const int origQty = incQty;
-    uint64_t incTime = incomingSoA.timestamps[addIdx];
-
-    if (incQty <= 0)
-    {
-        return;
-    }
-
-    // Match against opposing resting price levels in price-time priority
-    for (std::size_t l = 0; l < numLevels && incQty > 0; ++l)
-    {
-        PriceLevel& level = levels[l];
-
-        // Buy matches Sell (side 1); Sell matches Buy (side 0)
-        bool isOppositeSide = (incSide == 0 && level.side == 1) || (incSide == 1 && level.side == 0);
-        if (!isOppositeSide)
-        {
-            continue;
-        }
-
-        // Price crossing check: Buy crosses ask <= incTick; Sell crosses bid >= incTick
-        bool crossesPrice = (incSide == 0 && level.priceTick <= incTick) ||
-                            (incSide == 1 && level.priceTick >= incTick);
-        if (!crossesPrice)
-        {
-            continue;
-        }
-
-        // Traverse CSR resting orders in FIFO order
-        for (int i = 0; i < level.orderCount && incQty > 0; ++i)
-        {
-            int restOrderIdx = orderIndices[level.firstOrder + i];
-            int restId = restingSoA.orderIds[restOrderIdx];
-
-            // Atomic CAS loop to claim resting order quantity safely across concurrent GPU threads
-            int* restQtyPtr = const_cast<int*>(&restingSoA.quantities[restOrderIdx]);
-            int oldQty = *restQtyPtr;
-            int execQty = 0;
-
-            while (oldQty > 0 && incQty > 0)
-            {
-                execQty = (incQty < oldQty) ? incQty : oldQty;
-                int prevQty = atomicCAS(restQtyPtr, oldQty, oldQty - execQty);
-                if (prevQty == oldQty)
-                {
-                    // Successfully claimed execQty from resting order
-                    break;
-                }
-                oldQty = prevQty;
-                execQty = 0;
-            }
-
-            if (execQty <= 0)
-            {
-                continue;
-            }
-
-            incQty -= execQty;
-            atomicSub(&level.totalQuantity, execQty);
-
-            // Record Trade via Warp-Level Aggregated Allocation
-            if (execQty > 0)
-            {
 #if defined(__CUDA_ARCH__)
-                uint32_t activeMask = __activemask();
-                uint32_t tradeMask = __ballot_sync(activeMask, true);
-
-                int laneId = threadIdx.x % 32;
-                uint32_t lowerLanesMask = (1u << laneId) - 1u;
-                int laneOffset = __popc(tradeMask & lowerLanesMask);
-                int totalWarpTrades = __popc(tradeMask);
-                int leaderLane = __ffs(tradeMask) - 1;
-
-                int warpBaseIdx = 0;
-                if (laneId == leaderLane)
-                {
-                    warpBaseIdx = atomicAdd(tradeCount, totalWarpTrades);
-                }
-                int baseIdx = __shfl_sync(tradeMask, warpBaseIdx, leaderLane);
-                int tradeIdx = baseIdx + laneOffset;
-#else
-                int tradeIdx = atomicAdd(tradeCount, 1);
+    __shared__ int s_gpuStats[4];
+    if (threadIdx.x < 4)
+    {
+        s_gpuStats[threadIdx.x] = 0;
+    }
+    __syncthreads();
 #endif
 
-                if (static_cast<std::size_t>(tradeIdx) < maxTrades && trades != nullptr)
-                {
-                    TradeRecord record;
-                    record.buyOrderId = (incSide == 0) ? incId : restId;
-                    record.sellOrderId = (incSide == 0) ? restId : incId;
-                    record.priceTick = level.priceTick; // Execution at resting order price tick
-                    record.executedQuantity = execQty;
-                    record.timestamp = incTime;
-                    record.aggressorSide = incSide;
+    std::size_t threadIdxGlobal = static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (threadIdxGlobal < numAddEvents)
+    {
+        int addIdx = addIndices[threadIdxGlobal];
+        int incId = incomingSoA.orderIds[addIdx];
+        uint8_t incSide = incomingSoA.sides[addIdx];
+        double incPrice = incomingSoA.prices[addIdx];
+        uint32_t incTick = static_cast<uint32_t>(llround(incPrice / tickSize));
+        int incQty = incomingSoA.quantities[addIdx];
+        const int origQty = incQty;
+        uint64_t incTime = incomingSoA.timestamps[addIdx];
 
-                    trades[tradeIdx] = record;
+        if (incQty > 0)
+        {
+            // Match against opposing resting price levels in price-time priority
+            for (std::size_t l = 0; l < numLevels && incQty > 0; ++l)
+            {
+                PriceLevel& level = levels[l];
+
+                // Buy matches Sell (side 1); Sell matches Buy (side 0)
+                bool isOppositeSide = (incSide == 0 && level.side == 1) || (incSide == 1 && level.side == 0);
+                if (!isOppositeSide)
+                {
+                    continue;
+                }
+
+                // Price crossing check: Buy crosses ask <= incTick; Sell crosses bid >= incTick
+                bool crossesPrice = (incSide == 0 && level.priceTick <= incTick) ||
+                                    (incSide == 1 && level.priceTick >= incTick);
+                if (!crossesPrice)
+                {
+                    continue;
+                }
+
+                // Traverse CSR resting orders in FIFO order
+                for (int i = 0; i < level.orderCount && incQty > 0; ++i)
+                {
+                    int restOrderIdx = orderIndices[level.firstOrder + i];
+                    int restId = restingSoA.orderIds[restOrderIdx];
+
+                    // Atomic CAS loop to claim resting order quantity safely across concurrent GPU threads
+                    int* restQtyPtr = const_cast<int*>(&restingSoA.quantities[restOrderIdx]);
+                    int oldQty = *restQtyPtr;
+                    int execQty = 0;
+
+                    while (oldQty > 0 && incQty > 0)
+                    {
+                        execQty = (incQty < oldQty) ? incQty : oldQty;
+                        int prevQty = atomicCAS(restQtyPtr, oldQty, oldQty - execQty);
+                        if (prevQty == oldQty)
+                        {
+                            // Successfully claimed execQty from resting order
+                            break;
+                        }
+                        oldQty = prevQty;
+                        execQty = 0;
+                    }
+
+                    if (execQty <= 0)
+                    {
+                        continue;
+                    }
+
+                    incQty -= execQty;
+                    atomicSub(&level.totalQuantity, execQty);
+
+                    // Record Trade via Warp-Level Aggregated Allocation
+                    if (execQty > 0)
+                    {
+#if defined(__CUDA_ARCH__)
+                        uint32_t activeMask = __activemask();
+                        uint32_t tradeMask = __ballot_sync(activeMask, true);
+
+                        int laneId = threadIdx.x % 32;
+                        uint32_t lowerLanesMask = (1u << laneId) - 1u;
+                        int laneOffset = __popc(tradeMask & lowerLanesMask);
+                        int totalWarpTrades = __popc(tradeMask);
+                        int leaderLane = __ffs(tradeMask) - 1;
+
+                        int warpBaseIdx = 0;
+                        if (laneId == leaderLane)
+                        {
+                            warpBaseIdx = atomicAdd(tradeCount, totalWarpTrades);
+                        }
+                        int baseIdx = __shfl_sync(tradeMask, warpBaseIdx, leaderLane);
+                        int tradeIdx = baseIdx + laneOffset;
+#else
+                        int tradeIdx = atomicAdd(tradeCount, 1);
+#endif
+
+                        if (static_cast<std::size_t>(tradeIdx) < maxTrades && trades != nullptr)
+                        {
+                            TradeRecord record;
+                            record.buyOrderId = (incSide == 0) ? incId : restId;
+                            record.sellOrderId = (incSide == 0) ? restId : incId;
+                            record.priceTick = level.priceTick; // Execution at resting order price tick
+                            record.executedQuantity = execQty;
+                            record.timestamp = incTime;
+                            record.aggressorSide = incSide;
+
+                            trades[tradeIdx] = record;
+                        }
+                    }
+
+#if defined(__CUDA_ARCH__)
+                    atomicAdd(&s_gpuStats[0], 1); // tradesGenerated
+#else
+                    atomicAdd(&gpuStats[0], 1); // tradesGenerated
+#endif
                 }
             }
 
-            atomicAdd(&gpuStats[0], 1); // tradesGenerated
+            // Update execution statistics
+#if defined(__CUDA_ARCH__)
+            if (incQty == 0)
+            {
+                atomicAdd(&s_gpuStats[1], 1); // fullyMatchedOrders
+            }
+            else if (incQty < origQty)
+            {
+                atomicAdd(&s_gpuStats[2], 1); // partiallyMatchedOrders
+            }
+            else
+            {
+                atomicAdd(&s_gpuStats[3], 1); // restedOrders
+            }
+#else
+            if (incQty == 0)
+            {
+                atomicAdd(&gpuStats[1], 1); // fullyMatchedOrders
+            }
+            else if (incQty < origQty)
+            {
+                atomicAdd(&gpuStats[2], 1); // partiallyMatchedOrders
+            }
+            else
+            {
+                atomicAdd(&gpuStats[3], 1); // restedOrders
+            }
+#endif
         }
     }
 
-    // Update execution statistics
-    if (incQty == 0)
+#if defined(__CUDA_ARCH__)
+    __syncthreads();
+    if (threadIdx.x < 4)
     {
-        atomicAdd(&gpuStats[1], 1); // fullyMatchedOrders
+        if (s_gpuStats[threadIdx.x] > 0)
+        {
+            atomicAdd(&gpuStats[threadIdx.x], s_gpuStats[threadIdx.x]);
+        }
     }
-    else if (incQty < origQty)
-    {
-        atomicAdd(&gpuStats[2], 1); // partiallyMatchedOrders
-    }
-    else
-    {
-        atomicAdd(&gpuStats[3], 1); // restedOrders
-    }
+#endif
 }
 
 // -----------------------------------------------------------------------------
