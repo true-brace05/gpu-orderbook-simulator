@@ -163,7 +163,7 @@ void buildPriceLevelsAsync(
     extractOrderKeysKernel<<<gridSize, blockSize, 0, stream>>>(
         classifiedBuffer.getIndices(EventType::Add),
         addCount,
-        decodedBuffer.getConstDeviceView(),
+        decodedBuffer.getDeviceView(),
         keysBuffer.data(),
         tickSize
     );

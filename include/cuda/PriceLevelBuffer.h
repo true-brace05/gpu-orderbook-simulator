@@ -34,6 +34,7 @@ private:
     DeviceBuffer<int> levelCountBuf;     // 1 int in GPU memory for atomic counter
     std::size_t activeLevelCount = 0;
     std::size_t activeOrderCount = 0;
+    std::size_t capacityElements = 0;
 
 public:
     /**

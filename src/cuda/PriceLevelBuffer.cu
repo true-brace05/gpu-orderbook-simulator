@@ -14,10 +14,12 @@ PriceLevelBuffer::PriceLevelBuffer(PriceLevelBuffer&& other) noexcept
       orderIndicesBuf(std::move(other.orderIndicesBuf)),
       levelCountBuf(std::move(other.levelCountBuf)),
       activeLevelCount(other.activeLevelCount),
-      activeOrderCount(other.activeOrderCount)
+      activeOrderCount(other.activeOrderCount),
+      capacityElements(other.capacityElements)
 {
     other.activeLevelCount = 0;
     other.activeOrderCount = 0;
+    other.capacityElements = 0;
 }
 
 PriceLevelBuffer& PriceLevelBuffer::operator=(PriceLevelBuffer&& other) noexcept
@@ -29,9 +31,11 @@ PriceLevelBuffer& PriceLevelBuffer::operator=(PriceLevelBuffer&& other) noexcept
         levelCountBuf = std::move(other.levelCountBuf);
         activeLevelCount = other.activeLevelCount;
         activeOrderCount = other.activeOrderCount;
+        capacityElements = other.capacityElements;
 
         other.activeLevelCount = 0;
         other.activeOrderCount = 0;
+        other.capacityElements = 0;
     }
 
     return *this;
@@ -52,6 +56,7 @@ void PriceLevelBuffer::allocate(std::size_t capacity)
 
     activeLevelCount = 0;
     activeOrderCount = 0;
+    capacityElements = capacity;
 }
 
 void PriceLevelBuffer::reserve(std::size_t newCapacity)
@@ -61,7 +66,7 @@ void PriceLevelBuffer::reserve(std::size_t newCapacity)
         throw std::invalid_argument("PriceLevelBuffer::reserve: Reserve capacity cannot be zero");
     }
 
-    if (newCapacity <= capacity())
+    if (newCapacity <= capacityElements)
     {
         return;
     }
@@ -116,6 +121,7 @@ void PriceLevelBuffer::reserve(std::size_t newCapacity)
     levelsBuf = std::move(newLevels);
     orderIndicesBuf = std::move(newOrderIndices);
     levelCountBuf = std::move(newCountBuf);
+    capacityElements = newCapacity;
 }
 
 void PriceLevelBuffer::resize(std::size_t newSize)
@@ -144,6 +150,7 @@ void PriceLevelBuffer::release() noexcept
     levelCountBuf.release();
     activeLevelCount = 0;
     activeOrderCount = 0;
+    capacityElements = 0;
 }
 
 void PriceLevelBuffer::updateHostCount(cudaStream_t stream)
@@ -180,7 +187,7 @@ std::size_t PriceLevelBuffer::orderCount() const noexcept
 
 std::size_t PriceLevelBuffer::capacity() const noexcept
 {
-    return levelsBuf.capacity();
+    return capacityElements;
 }
 
 bool PriceLevelBuffer::empty() const noexcept
