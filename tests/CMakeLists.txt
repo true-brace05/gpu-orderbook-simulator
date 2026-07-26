@@ -373,6 +373,22 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
     )
 
     add_test(NAME test_event_decoder COMMAND test_event_decoder)
+
+    add_executable(
+        test_event_classifier
+
+        test_event_classifier.cpp
+    )
+
+    target_link_libraries(
+        test_event_classifier
+
+        PRIVATE
+
+        cuda_core
+    )
+
+    add_test(NAME test_event_classifier COMMAND test_event_classifier)
 endif()
 
 add_test(NAME test_matching COMMAND test_matching)

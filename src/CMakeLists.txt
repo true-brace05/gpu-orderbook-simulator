@@ -67,6 +67,8 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
         cuda/ReplayBuffer.cu
         cuda/DecodedEventBuffer.cu
         cuda/EventDecoder.cu
+        cuda/ClassifiedEventBuffer.cu
+        cuda/EventClassifier.cu
         cuda/hello_kernel.cu
         cuda/vector_ops.cu
     )

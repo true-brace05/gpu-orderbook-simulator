@@ -98,4 +98,18 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
 
         cuda_core
     )
+
+    add_executable(
+        benchmark_event_classifier
+
+        benchmark_event_classifier.cpp
+    )
+
+    target_link_libraries(
+        benchmark_event_classifier
+
+        PRIVATE
+
+        cuda_core
+    )
 endif()
