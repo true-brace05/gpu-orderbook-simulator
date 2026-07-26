@@ -33,6 +33,7 @@ __global__ void matchAddOrdersKernel(
     const int* addIndices,
     std::size_t numAddEvents,
     ConstDecodedEventSoAView incomingSoA,
+    ConstDecodedEventSoAView restingSoA,
     PriceLevel* levels,
     const int* orderIndices,
     std::size_t numLevels,
@@ -86,10 +87,10 @@ __global__ void matchAddOrdersKernel(
         for (int i = 0; i < level.orderCount && incQty > 0; ++i)
         {
             int restOrderIdx = orderIndices[level.firstOrder + i];
-            int restId = incomingSoA.orderIds[restOrderIdx];
+            int restId = restingSoA.orderIds[restOrderIdx];
 
             // Atomic CAS loop to claim resting order quantity safely across concurrent GPU threads
-            int* restQtyPtr = const_cast<int*>(&incomingSoA.quantities[restOrderIdx]);
+            int* restQtyPtr = const_cast<int*>(&restingSoA.quantities[restOrderIdx]);
             int oldQty = *restQtyPtr;
             int execQty = 0;
 
@@ -155,6 +156,7 @@ __global__ void matchAddOrdersKernel(
 void matchAddOrdersAsync(
     const DecodedEventBuffer& incomingEvents,
     const ClassifiedEventBuffer& classifiedEvents,
+    const DecodedEventBuffer& restingEvents,
     PriceLevelBuffer& restingBook,
     TradeBuffer& tradeOutput,
     MatchingStatistics& statistics,
@@ -184,6 +186,11 @@ void matchAddOrdersAsync(
         throw std::invalid_argument("matchAddOrdersAsync: Input ClassifiedEventBuffer is not valid");
     }
 
+    if (!restingEvents.isValid())
+    {
+        throw std::invalid_argument("matchAddOrdersAsync: Resting DecodedEventBuffer is not valid");
+    }
+
     // Reserve trade output capacity (estimate: up to 2 trades per incoming order)
     const std::size_t estimatedTradeCapacity = std::max<std::size_t>(addCount * 2, 64);
     if (tradeOutput.capacity() < estimatedTradeCapacity)
@@ -210,6 +217,7 @@ void matchAddOrdersAsync(
         classifiedEvents.getIndices(EventType::Add),
         addCount,
         incomingEvents.getDeviceView(),
+        restingEvents.getDeviceView(),
         restingBook.data(),
         restingBook.orderIndicesData(),
         restingBook.size(),
@@ -248,6 +256,7 @@ void matchAddOrdersAsync(
 void matchAddOrders(
     const DecodedEventBuffer& incomingEvents,
     const ClassifiedEventBuffer& classifiedEvents,
+    const DecodedEventBuffer& restingEvents,
     PriceLevelBuffer& restingBook,
     TradeBuffer& tradeOutput,
     MatchingStatistics& statistics,
@@ -257,6 +266,7 @@ void matchAddOrders(
     matchAddOrdersAsync(
         incomingEvents,
         classifiedEvents,
+        restingEvents,
         restingBook,
         tradeOutput,
         statistics,

@@ -47,6 +47,7 @@ struct MatchingStatistics
 void matchAddOrders(
     const DecodedEventBuffer& incomingEvents,
     const ClassifiedEventBuffer& classifiedEvents,
+    const DecodedEventBuffer& restingEvents,
     PriceLevelBuffer& restingBook,
     TradeBuffer& tradeOutput,
     MatchingStatistics& statistics,
@@ -58,6 +59,7 @@ void matchAddOrders(
  *
  * @param incomingEvents Input DecodedEventBuffer containing incoming order attributes.
  * @param classifiedEvents Input ClassifiedEventBuffer containing classified Add event indices.
+ * @param restingEvents Input DecodedEventBuffer containing resting order attributes.
  * @param restingBook Resting PriceLevelBuffer order book.
  * @param tradeOutput Output TradeBuffer receiving executed trade records.
  * @param statistics Output MatchingStatistics tracking execution counts.
@@ -67,6 +69,7 @@ void matchAddOrders(
 void matchAddOrdersAsync(
     const DecodedEventBuffer& incomingEvents,
     const ClassifiedEventBuffer& classifiedEvents,
+    const DecodedEventBuffer& restingEvents,
     PriceLevelBuffer& restingBook,
     TradeBuffer& tradeOutput,
     MatchingStatistics& statistics,

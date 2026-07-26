@@ -23,14 +23,18 @@ struct OrderKey
     int addIndex;
     int quantity;
 
-    // Sorting functor: Sort by (side, priceTick)
+    // Sorting functor: Sort by (side, priceTick, addIndex) for FIFO arrival order
     __host__ __device__ bool operator<(const OrderKey& other) const
     {
         if (side != other.side)
         {
             return side < other.side;
         }
-        return priceTick < other.priceTick;
+        if (priceTick != other.priceTick)
+        {
+            return priceTick < other.priceTick;
+        }
+        return addIndex < other.addIndex;
     }
 };
 
@@ -173,17 +177,17 @@ void buildPriceLevelsAsync(
         "Failed to launch extractOrderKeysKernel"
     );
 
-    // 2. Sort keys by (side, priceTick) using Thrust on CUDA stream
+    // 2. Sort keys by (side, priceTick, addIndex) using Thrust stable_sort on CUDA stream
     thrust::device_ptr<OrderKey> d_keys_start(keysBuffer.data());
     thrust::device_ptr<OrderKey> d_keys_end(keysBuffer.data() + addCount);
 
     if (stream != nullptr)
     {
-        thrust::sort(thrust::cuda::par.on(stream), d_keys_start, d_keys_end);
+        thrust::stable_sort(thrust::cuda::par.on(stream), d_keys_start, d_keys_end);
     }
     else
     {
-        thrust::sort(thrust::device, d_keys_start, d_keys_end);
+        thrust::stable_sort(thrust::device, d_keys_start, d_keys_end);
     }
 
     // 3. Build CSR price levels and order indices

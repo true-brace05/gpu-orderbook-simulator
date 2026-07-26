@@ -114,7 +114,7 @@ int main()
             MatchingStatistics stats;
 
             // Warmup execution
-            matchAddOrders(incDecoded, incClassified, restingBook, tradeBuf, stats, context, tickSize);
+            matchAddOrders(incDecoded, incClassified, restDecoded, restingBook, tradeBuf, stats, context, tickSize);
 
             const std::size_t bytesTransferred = N * (sizeof(double) + sizeof(int) + sizeof(uint8_t)) +
                                                  stats.tradesGenerated * sizeof(TradeRecord);
@@ -129,7 +129,7 @@ int main()
                 incReplay.uploadBatch(incEvents.data(), N, context.getStream());
                 decodeEventsAsync(incReplay, incDecoded, context.getStream());
                 classifyEventsAsync(incDecoded, incClassified, context.getStream());
-                matchAddOrdersAsync(incDecoded, incClassified, restingBook, tradeBuf, stats, context.getStream(), tickSize);
+                matchAddOrdersAsync(incDecoded, incClassified, restDecoded, restingBook, tradeBuf, stats, context.getStream(), tickSize);
             }
             context.synchronize();
 
@@ -141,7 +141,7 @@ int main()
             context.startTimer();
             for (int it = 0; it < iterations; ++it)
             {
-                matchAddOrdersAsync(incDecoded, incClassified, restingBook, tradeBuf, stats, context.getStream(), tickSize);
+                matchAddOrdersAsync(incDecoded, incClassified, restDecoded, restingBook, tradeBuf, stats, context.getStream(), tickSize);
             }
             context.stopTimer();
             double totalKernelMs = context.elapsedMilliseconds();

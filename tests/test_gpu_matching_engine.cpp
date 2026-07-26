@@ -140,7 +140,7 @@ bool testNoMatch()
     TradeBuffer tradeBuf(10);
     MatchingStatistics stats;
 
-    matchAddOrders(incDecoded, incClassified, restingBook, tradeBuf, stats, context, tickSize);
+    matchAddOrders(incDecoded, incClassified, restDecoded, restingBook, tradeBuf, stats, context, tickSize);
 
     if (tradeBuf.size() != 0 || stats.tradesGenerated != 0 || stats.restedOrders != 1)
     {
@@ -180,7 +180,7 @@ bool testFullFill()
     TradeBuffer tradeBuf(10);
     MatchingStatistics stats;
 
-    matchAddOrders(incDecoded, incClassified, restingBook, tradeBuf, stats, context, tickSize);
+    matchAddOrders(incDecoded, incClassified, restDecoded, restingBook, tradeBuf, stats, context, tickSize);
 
     if (tradeBuf.size() != 1 || stats.tradesGenerated != 1 || stats.fullyMatchedOrders != 1)
     {
@@ -231,7 +231,7 @@ bool testPartialFill()
     TradeBuffer tradeBuf(10);
     MatchingStatistics stats;
 
-    matchAddOrders(incDecoded, incClassified, restingBook, tradeBuf, stats, context, tickSize);
+    matchAddOrders(incDecoded, incClassified, restDecoded, restingBook, tradeBuf, stats, context, tickSize);
 
     if (tradeBuf.size() != 1 || stats.partiallyMatchedOrders != 1)
     {
@@ -284,7 +284,7 @@ bool testMultiplePriceLevels()
     TradeBuffer tradeBuf(10);
     MatchingStatistics stats;
 
-    matchAddOrders(incDecoded, incClassified, restingBook, tradeBuf, stats, context, tickSize);
+    matchAddOrders(incDecoded, incClassified, restDecoded, restingBook, tradeBuf, stats, context, tickSize);
 
     if (tradeBuf.size() != 2 || stats.fullyMatchedOrders != 1)
     {
@@ -345,7 +345,7 @@ bool testFIFOCorrectness()
     TradeBuffer tradeBuf(10);
     MatchingStatistics stats;
 
-    matchAddOrders(incDecoded, incClassified, restingBook, tradeBuf, stats, context, tickSize);
+    matchAddOrders(incDecoded, incClassified, restDecoded, restingBook, tradeBuf, stats, context, tickSize);
 
     std::vector<TradeRecord> h_trades(1);
     tradeBuf.getTradesBuffer().copyToHostAsync(h_trades.data(), 1, context.getStream());
@@ -375,7 +375,7 @@ bool testInvalidArguments()
     bool tickSizeThrew = false;
     try
     {
-        matchAddOrders(incDecoded, incClassified, restingBook, tradeBuf, stats, context, -0.01);
+        matchAddOrders(incDecoded, incClassified, incDecoded, restingBook, tradeBuf, stats, context, -0.01);
     }
     catch (const std::invalid_argument&)
     {
