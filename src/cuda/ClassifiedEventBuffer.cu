@@ -89,6 +89,9 @@ void ClassifiedEventBuffer::reserve(std::size_t newCapacity)
     DeviceBuffer<int> newExecuteHidden(newCapacity);
     DeviceBuffer<int> newTradingHalt(newCapacity);
 
+    DeviceBuffer<int> newCategoryCounts(ClassificationCounters::NUM_CATEGORIES);
+    newCategoryCounts.zeroMemory();
+
     auto copyBuf = [](DeviceBuffer<int>& dst, const DeviceBuffer<int>& src, std::size_t count) {
         if (count > 0 && src.isValid())
         {
@@ -108,6 +111,11 @@ void ClassifiedEventBuffer::reserve(std::size_t newCapacity)
     copyBuf(newExecuteHidden, executeHiddenBuf, hostCounters.getCount(EventType::ExecuteHidden));
     copyBuf(newTradingHalt, tradingHaltBuf, hostCounters.getCount(EventType::TradingHalt));
 
+    if (categoryCountsBuf.isValid())
+    {
+        copyBuf(newCategoryCounts, categoryCountsBuf, ClassificationCounters::NUM_CATEGORIES);
+    }
+
     addBuf = std::move(newAdd);
     cancelBuf = std::move(newCancel);
     modifyBuf = std::move(newModify);
@@ -115,6 +123,7 @@ void ClassifiedEventBuffer::reserve(std::size_t newCapacity)
     executeVisibleBuf = std::move(newExecuteVisible);
     executeHiddenBuf = std::move(newExecuteHidden);
     tradingHaltBuf = std::move(newTradingHalt);
+    categoryCountsBuf = std::move(newCategoryCounts);
 
     capacityElements = newCapacity;
 }
