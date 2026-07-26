@@ -70,4 +70,18 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
 
         cuda_core
     )
+
+    add_executable(
+        benchmark_replay_buffer
+
+        benchmark_replay_buffer.cpp
+    )
+
+    target_link_libraries(
+        benchmark_replay_buffer
+
+        PRIVATE
+
+        cuda_core
+    )
 endif()

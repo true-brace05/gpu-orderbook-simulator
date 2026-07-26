@@ -64,6 +64,7 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
 
         cuda/CUDAContext.cu
         cuda/DeviceBuffer.cu
+        cuda/ReplayBuffer.cu
         cuda/hello_kernel.cu
         cuda/vector_ops.cu
     )
