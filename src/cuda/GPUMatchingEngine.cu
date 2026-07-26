@@ -115,19 +115,42 @@ __global__ void matchAddOrdersKernel(
             incQty -= execQty;
             atomicSub(&level.totalQuantity, execQty);
 
-            // Record Trade
-            int tradeIdx = atomicAdd(tradeCount, 1);
-            if (static_cast<std::size_t>(tradeIdx) < maxTrades && trades != nullptr)
+            // Record Trade via Warp-Level Aggregated Allocation
+            if (execQty > 0)
             {
-                TradeRecord record;
-                record.buyOrderId = (incSide == 0) ? incId : restId;
-                record.sellOrderId = (incSide == 0) ? restId : incId;
-                record.priceTick = level.priceTick; // Execution at resting order price tick
-                record.executedQuantity = execQty;
-                record.timestamp = incTime;
-                record.aggressorSide = incSide;
+#if defined(__CUDA_ARCH__)
+                uint32_t activeMask = __activemask();
+                uint32_t tradeMask = __ballot_sync(activeMask, true);
 
-                trades[tradeIdx] = record;
+                int laneId = threadIdx.x % 32;
+                uint32_t lowerLanesMask = (1u << laneId) - 1u;
+                int laneOffset = __popc(tradeMask & lowerLanesMask);
+                int totalWarpTrades = __popc(tradeMask);
+                int leaderLane = __ffs(tradeMask) - 1;
+
+                int warpBaseIdx = 0;
+                if (laneId == leaderLane)
+                {
+                    warpBaseIdx = atomicAdd(tradeCount, totalWarpTrades);
+                }
+                int baseIdx = __shfl_sync(tradeMask, warpBaseIdx, leaderLane);
+                int tradeIdx = baseIdx + laneOffset;
+#else
+                int tradeIdx = atomicAdd(tradeCount, 1);
+#endif
+
+                if (static_cast<std::size_t>(tradeIdx) < maxTrades && trades != nullptr)
+                {
+                    TradeRecord record;
+                    record.buyOrderId = (incSide == 0) ? incId : restId;
+                    record.sellOrderId = (incSide == 0) ? restId : incId;
+                    record.priceTick = level.priceTick; // Execution at resting order price tick
+                    record.executedQuantity = execQty;
+                    record.timestamp = incTime;
+                    record.aggressorSide = incSide;
+
+                    trades[tradeIdx] = record;
+                }
             }
 
             atomicAdd(&gpuStats[0], 1); // tradesGenerated
