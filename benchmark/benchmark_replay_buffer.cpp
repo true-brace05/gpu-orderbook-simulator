@@ -77,11 +77,11 @@ int main()
             for (std::size_t i = 0; i < N; ++i)
             {
                 h_src[i].timestamp = timeDist(rng);
-                h_src[i].type = (i % 2 == 0) ? EventType::NEW_ORDER : EventType::CANCEL;
+                h_src[i].type = (i % 2 == 0) ? EventType::Add : EventType::Cancel;
                 h_src[i].orderId = static_cast<int>(i + 1);
                 h_src[i].order.id = h_src[i].orderId;
-                h_src[i].order.side = (i % 3 == 0) ? Side::BUY : Side::SELL;
-                h_src[i].order.type = OrderType::LIMIT;
+                h_src[i].order.side = (i % 3 == 0) ? Side::Buy : Side::Sell;
+                h_src[i].order.type = OrderType::Limit;
                 h_src[i].order.price = priceDist(rng);
                 h_src[i].order.quantity = qtyDist(rng);
                 h_src[i].order.timestamp = h_src[i].timestamp;

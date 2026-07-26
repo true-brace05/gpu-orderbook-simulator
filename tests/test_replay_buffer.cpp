@@ -19,7 +19,7 @@ Event createSampleEvent(uint64_t timestamp, EventType type, int orderId, Side si
     ev.orderId = orderId;
     ev.order.id = orderId;
     ev.order.side = side;
-    ev.order.type = OrderType::LIMIT;
+    ev.order.type = OrderType::Limit;
     ev.order.price = price;
     ev.order.quantity = qty;
     ev.order.timestamp = timestamp;
@@ -135,9 +135,9 @@ bool testUploadDownloadCorrectness()
     {
         h_src[i] = createSampleEvent(
             1000000 + i,
-            (i % 2 == 0) ? EventType::NEW_ORDER : EventType::CANCEL,
+            (i % 2 == 0) ? EventType::Add : EventType::Cancel,
             static_cast<int>(i + 1),
-            (i % 3 == 0) ? Side::BUY : Side::SELL,
+            (i % 3 == 0) ? Side::Buy : Side::Sell,
             150.0 + (i * 0.05),
             10 * static_cast<int>((i % 5) + 1)
         );
@@ -183,11 +183,11 @@ bool testAppendBatch()
 
     for (std::size_t i = 0; i < chunk1Size; ++i)
     {
-        h_chunk1[i] = createSampleEvent(100 + i, EventType::NEW_ORDER, static_cast<int>(i + 1), Side::BUY, 100.0 + i, 5);
+        h_chunk1[i] = createSampleEvent(100 + i, EventType::Add, static_cast<int>(i + 1), Side::Buy, 100.0 + i, 5);
     }
     for (std::size_t i = 0; i < chunk2Size; ++i)
     {
-        h_chunk2[i] = createSampleEvent(500 + i, EventType::CANCEL, static_cast<int>(chunk1Size + i + 1), Side::SELL, 200.0 + i, 10);
+        h_chunk2[i] = createSampleEvent(500 + i, EventType::Cancel, static_cast<int>(chunk1Size + i + 1), Side::Sell, 200.0 + i, 10);
     }
 
     ReplayBuffer d_buf(chunk1Size); // Initial capacity chunk1Size
@@ -247,7 +247,7 @@ bool testReserveAndResize()
     std::vector<Event> h_src(N);
     for (std::size_t i = 0; i < N; ++i)
     {
-        h_src[i] = createSampleEvent(i * 10, EventType::NEW_ORDER, static_cast<int>(i), Side::BUY, 50.0 + i, 1);
+        h_src[i] = createSampleEvent(i * 10, EventType::Add, static_cast<int>(i), Side::Buy, 50.0 + i, 1);
     }
 
     ReplayBuffer buf(N);
@@ -304,7 +304,7 @@ bool testClearAndRelease()
     std::vector<Event> h_src(N);
     for (std::size_t i = 0; i < N; ++i)
     {
-        h_src[i] = createSampleEvent(i, EventType::NEW_ORDER, static_cast<int>(i), Side::BUY, 10.0, 1);
+        h_src[i] = createSampleEvent(i, EventType::Add, static_cast<int>(i), Side::Buy, 10.0, 1);
     }
 
     ReplayBuffer buf(N);
@@ -342,7 +342,7 @@ bool testMoveSemantics()
     std::vector<Event> h_src(N);
     for (std::size_t i = 0; i < N; ++i)
     {
-        h_src[i] = createSampleEvent(i, EventType::NEW_ORDER, static_cast<int>(i), Side::SELL, 99.0, 3);
+        h_src[i] = createSampleEvent(i, EventType::Add, static_cast<int>(i), Side::Sell, 99.0, 3);
     }
 
     ReplayBuffer src(N);
