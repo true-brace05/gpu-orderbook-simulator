@@ -46,8 +46,8 @@ public:
     ReplayBuffer& operator=(const ReplayBuffer&) = delete;
 
     // Movable
-    ReplayBuffer(ReplayBuffer&& other) noexcept = default;
-    ReplayBuffer& operator=(ReplayBuffer&& other) noexcept = default;
+    ReplayBuffer(ReplayBuffer&& other) noexcept;
+    ReplayBuffer& operator=(ReplayBuffer&& other) noexcept;
 
     /**
      * @brief Allocates GPU memory capacity for capacity elements.

@@ -8,6 +8,25 @@ ReplayBuffer::ReplayBuffer(std::size_t initialCapacity)
 {
 }
 
+ReplayBuffer::ReplayBuffer(ReplayBuffer&& other) noexcept
+    : deviceBuffer(std::move(other.deviceBuffer)),
+      elementCount(other.elementCount)
+{
+    other.elementCount = 0;
+}
+
+ReplayBuffer& ReplayBuffer::operator=(ReplayBuffer&& other) noexcept
+{
+    if (this != &other)
+    {
+        deviceBuffer = std::move(other.deviceBuffer);
+        elementCount = other.elementCount;
+        other.elementCount = 0;
+    }
+
+    return *this;
+}
+
 void ReplayBuffer::allocate(std::size_t capacity)
 {
     if (capacity == 0)
