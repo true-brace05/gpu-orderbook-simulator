@@ -119,6 +119,11 @@ void buildPriceLevelsAsync(
     cudaStream_t stream,
     double tickSize)
 {
+    if (tickSize <= 0.0)
+    {
+        throw std::invalid_argument("buildPriceLevelsAsync: tickSize must be greater than zero");
+    }
+
     const std::size_t addCount = classifiedBuffer.getCount(EventType::Add);
     if (addCount == 0)
     {
@@ -134,11 +139,6 @@ void buildPriceLevelsAsync(
     if (!classifiedBuffer.isValid())
     {
         throw std::invalid_argument("buildPriceLevelsAsync: Input ClassifiedEventBuffer is not valid");
-    }
-
-    if (tickSize <= 0.0)
-    {
-        throw std::invalid_argument("buildPriceLevelsAsync: tickSize must be greater than zero");
     }
 
     if (priceLevelBuffer.capacity() < addCount)
