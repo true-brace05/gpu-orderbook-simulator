@@ -421,6 +421,22 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
     )
 
     add_test(NAME test_gpu_matching_engine COMMAND test_gpu_matching_engine)
+
+    add_executable(
+        test_gpu_orderbook_state_manager
+
+        test_gpu_orderbook_state_manager.cpp
+    )
+
+    target_link_libraries(
+        test_gpu_orderbook_state_manager
+
+        PRIVATE
+
+        cuda_core
+    )
+
+    add_test(NAME test_gpu_orderbook_state_manager COMMAND test_gpu_orderbook_state_manager)
 endif()
 
 add_test(NAME test_matching COMMAND test_matching)
