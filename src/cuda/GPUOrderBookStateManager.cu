@@ -183,10 +183,10 @@ GPUOrderBookStateManager::GPUOrderBookStateManager(std::size_t maxOrders, std::s
         throw std::invalid_argument("GPUOrderBookStateManager: maxOrders must be > 0");
     }
 
-    ordersBuf.resize(orderCapacity);
-    hashMapBuf.resize(hashCapacity);
-    levelAggregatesBuf.resize(levelCapacity);
-    activeOrderCountBuf.resize(1);
+    ordersBuf.allocate(orderCapacity);
+    hashMapBuf.allocate(hashCapacity);
+    levelAggregatesBuf.allocate(levelCapacity);
+    activeOrderCountBuf.allocate(1);
 
     reset();
 }
@@ -221,8 +221,8 @@ void GPUOrderBookStateManager::processEventsShadow(
     double tickSize,
     cudaStream_t stream)
 {
-    std::size_t numAdd = classifiedEvents.getCategoryCount(EventType::Add);
-    std::size_t numCancel = classifiedEvents.getCategoryCount(EventType::Cancel);
+    std::size_t numAdd = classifiedEvents.getCount(EventType::Add);
+    std::size_t numCancel = classifiedEvents.getCount(EventType::Cancel);
 
     int blockSize = 256;
 
@@ -231,9 +231,9 @@ void GPUOrderBookStateManager::processEventsShadow(
     {
         int addBlocks = static_cast<int>((numAdd + blockSize - 1) / blockSize);
         processAddEventsKernel<<<addBlocks, blockSize, 0, stream>>>(
-            classifiedEvents.getCategoryIndices(EventType::Add),
+            classifiedEvents.getIndices(EventType::Add),
             numAdd,
-            decodedEvents.getConstSoAView(),
+            decodedEvents.getDeviceView(),
             ordersBuf.data(),
             activeOrderCountBuf.data(),
             orderCapacity,
@@ -247,9 +247,9 @@ void GPUOrderBookStateManager::processEventsShadow(
     {
         int cancelBlocks = static_cast<int>((numCancel + blockSize - 1) / blockSize);
         processCancelEventsKernel<<<cancelBlocks, blockSize, 0, stream>>>(
-            classifiedEvents.getCategoryIndices(EventType::Cancel),
+            classifiedEvents.getIndices(EventType::Cancel),
             numCancel,
-            decodedEvents.getConstSoAView(),
+            decodedEvents.getDeviceView(),
             ordersBuf.data(),
             hashMapBuf.data(),
             hashCapacity);
@@ -264,7 +264,7 @@ void GPUOrderBookStateManager::processEventsShadow(
 std::size_t GPUOrderBookStateManager::getActiveOrderCount(cudaStream_t stream) const
 {
     int hostCount = 0;
-    activeOrderCountBuf.copyToHost(&hostCount, 1, stream);
+    activeOrderCountBuf.copyToHost(&hostCount, 1);
     return static_cast<std::size_t>(hostCount);
 }
 
@@ -307,25 +307,38 @@ bool GPUOrderBookStateManager::verifyBatch(
     std::vector<Event> cpuEvents(totalEvents);
     if (totalEvents > 0)
     {
-        decodedEvents.copyToHost(cpuEvents.data(), totalEvents);
-    }
+        // Copy decoded attributes back from GPU DecodedEventBuffer view
+        ConstDecodedEventSoAView deviceView = decodedEvents.getDeviceView();
+        std::vector<int> hostOrderIds(totalEvents);
+        std::vector<uint8_t> hostSides(totalEvents);
+        std::vector<double> hostPrices(totalEvents);
+        std::vector<int> hostQuantities(totalEvents);
+        std::vector<uint8_t> hostEventTypes(totalEvents);
 
-    for (const auto& ev : cpuEvents)
-    {
-        if (ev.type == EventType::Add)
+        decodedEvents.orderIdsBuffer().copyToHost(hostOrderIds.data(), totalEvents);
+        decodedEvents.sidesBuffer().copyToHost(hostSides.data(), totalEvents);
+        decodedEvents.pricesBuffer().copyToHost(hostPrices.data(), totalEvents);
+        decodedEvents.quantitiesBuffer().copyToHost(hostQuantities.data(), totalEvents);
+        decodedEvents.eventTypesBuffer().copyToHost(hostEventTypes.data(), totalEvents);
+
+        for (std::size_t i = 0; i < totalEvents; ++i)
         {
-            uint32_t priceTick = static_cast<uint32_t>(llround(ev.price / tickSize));
-            cpuBook[ev.orderId] = HostOrder{ev.orderId, priceTick, ev.quantity, static_cast<uint8_t>(ev.side)};
-        }
-        else if (ev.type == EventType::Cancel)
-        {
-            auto it = cpuBook.find(ev.orderId);
-            if (it != cpuBook.end())
+            EventType evType = static_cast<EventType>(hostEventTypes[i]);
+            if (evType == EventType::Add)
             {
-                it->second.quantity -= ev.quantity;
-                if (it->second.quantity <= 0)
+                uint32_t priceTick = static_cast<uint32_t>(llround(hostPrices[i] / tickSize));
+                cpuBook[hostOrderIds[i]] = HostOrder{hostOrderIds[i], priceTick, hostQuantities[i], hostSides[i]};
+            }
+            else if (evType == EventType::Cancel)
+            {
+                auto it = cpuBook.find(hostOrderIds[i]);
+                if (it != cpuBook.end())
                 {
-                    it->second.quantity = 0;
+                    it->second.quantity -= hostQuantities[i];
+                    if (it->second.quantity <= 0)
+                    {
+                        it->second.quantity = 0;
+                    }
                 }
             }
         }

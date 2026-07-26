@@ -80,8 +80,8 @@ void testCancelFullOrder()
 
     ReplayBuffer replay(100);
     std::vector<Event> events = {
-        {1, EventType::Add, {101, Side::Buy, OrderType::Limit, 100.0, 50, 1000}, -1},
-        {2, EventType::Cancel, {101, Side::Buy, OrderType::Limit, 100.0, 50, 1001}, -1}
+        {1, EventType::Add, {101, Side::Buy, OrderType::Limit, 100.0, 50, 1000}, 101},
+        {2, EventType::Cancel, {101, Side::Buy, OrderType::Limit, 100.0, 50, 1001}, 101}
     };
     replay.uploadEvents(events);
 
@@ -107,8 +107,8 @@ void testCancelPartialOrder()
 
     ReplayBuffer replay(100);
     std::vector<Event> events = {
-        {1, EventType::Add, {201, Side::Sell, OrderType::Limit, 105.0, 100, 1000}, -1},
-        {2, EventType::Cancel, {201, Side::Sell, OrderType::Limit, 105.0, 40, 1001}, -1}
+        {1, EventType::Add, {201, Side::Sell, OrderType::Limit, 105.0, 100, 1000}, 201},
+        {2, EventType::Cancel, {201, Side::Sell, OrderType::Limit, 105.0, 40, 1001}, 201}
     };
     replay.uploadEvents(events);
 
