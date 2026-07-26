@@ -357,6 +357,22 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
     )
 
     add_test(NAME test_replay_buffer COMMAND test_replay_buffer)
+
+    add_executable(
+        test_event_decoder
+
+        test_event_decoder.cpp
+    )
+
+    target_link_libraries(
+        test_event_decoder
+
+        PRIVATE
+
+        cuda_core
+    )
+
+    add_test(NAME test_event_decoder COMMAND test_event_decoder)
 endif()
 
 add_test(NAME test_matching COMMAND test_matching)

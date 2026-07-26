@@ -84,4 +84,18 @@ if(ENABLE_CUDA AND CMAKE_CUDA_COMPILER)
 
         cuda_core
     )
+
+    add_executable(
+        benchmark_event_decoder
+
+        benchmark_event_decoder.cpp
+    )
+
+    target_link_libraries(
+        benchmark_event_decoder
+
+        PRIVATE
+
+        cuda_core
+    )
 endif()
