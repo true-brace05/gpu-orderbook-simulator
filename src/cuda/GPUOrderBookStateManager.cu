@@ -580,21 +580,42 @@ bool GPUOrderBookStateManager::verifyBatch(
         for (std::size_t i = 0; i < totalEvents; ++i)
         {
             EventType evType = static_cast<EventType>(hostEventTypes[i]);
+            int orderId = hostOrderIds[i];
+            int qty = hostQuantities[i];
+
             if (evType == EventType::Add)
             {
                 uint32_t priceTick = static_cast<uint32_t>(llround(hostPrices[i] / tickSize));
-                cpuBook[hostOrderIds[i]] = HostOrder{hostOrderIds[i], priceTick, hostQuantities[i], hostSides[i]};
+                cpuBook[orderId] = HostOrder{orderId, priceTick, qty, hostSides[i]};
             }
-            else if (evType == EventType::Cancel)
+            else if (evType == EventType::Cancel || evType == EventType::ExecuteVisible || evType == EventType::ExecuteHidden)
             {
-                auto it = cpuBook.find(hostOrderIds[i]);
+                auto it = cpuBook.find(orderId);
                 if (it != cpuBook.end())
                 {
-                    it->second.quantity -= hostQuantities[i];
+                    it->second.quantity -= qty;
                     if (it->second.quantity <= 0)
                     {
                         it->second.quantity = 0;
                     }
+                }
+            }
+            else if (evType == EventType::Delete)
+            {
+                auto it = cpuBook.find(orderId);
+                if (it != cpuBook.end())
+                {
+                    it->second.quantity = 0;
+                }
+            }
+            else if (evType == EventType::Modify)
+            {
+                auto it = cpuBook.find(orderId);
+                if (it != cpuBook.end())
+                {
+                    uint32_t priceTick = static_cast<uint32_t>(llround(hostPrices[i] / tickSize));
+                    it->second.priceTick = priceTick;
+                    it->second.quantity = qty;
                 }
             }
         }
