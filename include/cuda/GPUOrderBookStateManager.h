@@ -16,12 +16,15 @@
  */
 struct GPUOrderState
 {
-    int orderId = 0;           // Unique Order ID
-    uint32_t priceTick = 0;    // Quantized price tick
-    int quantity = 0;          // Active remaining quantity
-    uint8_t side = 0;          // 0 = Buy, 1 = Sell
-    uint64_t timestamp = 0;    // Arrival timestamp
-    uint8_t status = 0;        // 0 = Active, 1 = Canceled, 2 = Empty
+    int orderId = 0;             // Unique Order ID
+    uint32_t priceTick = 0;      // Quantized price tick
+    int quantity = 0;            // Active total remaining quantity
+    int displayQuantity = 0;     // Visible quantity
+    int reserveQuantity = 0;     // Hidden/reserve quantity
+    uint8_t side = 0;            // 0 = Buy, 1 = Sell
+    uint8_t orderType = 0;       // 0 = Limit, 1 = Iceberg, 2 = Hidden
+    uint64_t timestamp = 0;      // Arrival/priority timestamp
+    uint8_t status = 0;          // 0 = Active, 1 = Canceled, 2 = Deleted, 3 = Filled, 4 = Empty
 };
 
 /**

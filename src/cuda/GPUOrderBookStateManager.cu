@@ -79,9 +79,12 @@ __global__ void processAddEventsKernel(
     int addIdx = addIndices[tid];
     int orderId = decodedSoA.orderIds[addIdx];
     uint8_t side = decodedSoA.sides[addIdx];
+    uint8_t orderType = decodedSoA.orderTypes[addIdx];
     double price = decodedSoA.prices[addIdx];
     uint32_t priceTick = static_cast<uint32_t>(llround(price / tickSize));
     int quantity = decodedSoA.quantities[addIdx];
+    int displayQty = decodedSoA.displayQuantities ? decodedSoA.displayQuantities[addIdx] : quantity;
+    int reserveQty = decodedSoA.reserveQuantities ? decodedSoA.reserveQuantities[addIdx] : 0;
     uint64_t timestamp = decodedSoA.timestamps[addIdx];
 
     if (quantity <= 0)
@@ -96,7 +99,10 @@ __global__ void processAddEventsKernel(
         state.orderId = orderId;
         state.priceTick = priceTick;
         state.quantity = quantity;
+        state.displayQuantity = (displayQty > 0) ? displayQty : quantity;
+        state.reserveQuantity = reserveQty;
         state.side = side;
+        state.orderType = orderType;
         state.timestamp = timestamp;
         state.status = 0; // Active
 
@@ -138,7 +144,9 @@ __global__ void processCancelEventsKernel(
         if (oldQty <= cancelQty)
         {
             atomicExch(qtyPtr, 0);
-            order.status = 1; // Canceled
+            atomicExch(&order.displayQuantity, 0);
+            atomicExch(&order.reserveQuantity, 0);
+            atomicCAS(&order.status, 0, 1); // Canceled (1)
         }
     }
 }
