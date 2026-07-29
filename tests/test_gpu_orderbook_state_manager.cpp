@@ -48,6 +48,74 @@ Event createCancelEvent(int orderId, Side side, double price, int cancelQuantity
     ev.order.reserveQuantity = 0;
     return ev;
 }
+
+Event createModifyEvent(int orderId, Side side, double newPrice, int newQuantity, uint64_t timestamp)
+{
+    Event ev;
+    ev.timestamp = timestamp;
+    ev.type = EventType::Modify;
+    ev.orderId = orderId;
+    ev.order.id = orderId;
+    ev.order.side = side;
+    ev.order.type = OrderType::Limit;
+    ev.order.price = newPrice;
+    ev.order.quantity = newQuantity;
+    ev.order.timestamp = timestamp;
+    ev.order.displayQuantity = newQuantity;
+    ev.order.reserveQuantity = 0;
+    return ev;
+}
+
+Event createDeleteEvent(int orderId, Side side, double price, uint64_t timestamp)
+{
+    Event ev;
+    ev.timestamp = timestamp;
+    ev.type = EventType::Delete;
+    ev.orderId = orderId;
+    ev.order.id = orderId;
+    ev.order.side = side;
+    ev.order.type = OrderType::Limit;
+    ev.order.price = price;
+    ev.order.quantity = 0;
+    ev.order.timestamp = timestamp;
+    ev.order.displayQuantity = 0;
+    ev.order.reserveQuantity = 0;
+    return ev;
+}
+
+Event createExecuteVisibleEvent(int orderId, Side side, double price, int execQuantity, uint64_t timestamp)
+{
+    Event ev;
+    ev.timestamp = timestamp;
+    ev.type = EventType::ExecuteVisible;
+    ev.orderId = orderId;
+    ev.order.id = orderId;
+    ev.order.side = side;
+    ev.order.type = OrderType::Limit;
+    ev.order.price = price;
+    ev.order.quantity = execQuantity;
+    ev.order.timestamp = timestamp;
+    ev.order.displayQuantity = execQuantity;
+    ev.order.reserveQuantity = 0;
+    return ev;
+}
+
+Event createExecuteHiddenEvent(int orderId, Side side, double price, int execQuantity, uint64_t timestamp)
+{
+    Event ev;
+    ev.timestamp = timestamp;
+    ev.type = EventType::ExecuteHidden;
+    ev.orderId = orderId;
+    ev.order.id = orderId;
+    ev.order.side = side;
+    ev.order.type = OrderType::Iceberg;
+    ev.order.price = price;
+    ev.order.quantity = execQuantity;
+    ev.order.timestamp = timestamp;
+    ev.order.displayQuantity = 0;
+    ev.order.reserveQuantity = execQuantity;
+    return ev;
+}
 } // namespace
 
 void testAddSingleOrder()
@@ -230,10 +298,182 @@ void testCancelNonExistentOrder()
     std::cout << "PASSED\n";
 }
 
+void testModifyOrderPriceAndQuantity()
+{
+    std::cout << "[Test] Modify Order Price & Quantity ... ";
+
+    CUDAContext context;
+    std::vector<Event> events = {
+        createAddEvent(301, Side::Buy, 100.0, 50, 1000),
+        createModifyEvent(301, Side::Buy, 101.5, 80, 1001)
+    };
+
+    ReplayBuffer replay(100);
+    replay.uploadBatch(events.data(), events.size(), context.getStream());
+
+    DecodedEventBuffer decoded(100);
+    decodeEventsAsync(replay, decoded, context.getStream());
+
+    ClassifiedEventBuffer classified(100);
+    classifyEventsAsync(decoded, classified, context.getStream());
+
+    GPUOrderBookStateManager stateMgr(1000);
+    stateMgr.processEventsShadow(classified, decoded, 0.01, context.getStream());
+    context.synchronize();
+
+    std::string errMsg;
+    bool ok = stateMgr.verifyBatch(decoded, 0.01, &errMsg);
+    if (!ok)
+    {
+        std::cerr << "Verification failed: " << errMsg << "\n";
+    }
+    assert(ok);
+
+    std::cout << "PASSED\n";
+}
+
+void testDeleteOrder()
+{
+    std::cout << "[Test] Delete Order ... ";
+
+    CUDAContext context;
+    std::vector<Event> events = {
+        createAddEvent(401, Side::Sell, 102.0, 30, 1000),
+        createDeleteEvent(401, Side::Sell, 102.0, 1001)
+    };
+
+    ReplayBuffer replay(100);
+    replay.uploadBatch(events.data(), events.size(), context.getStream());
+
+    DecodedEventBuffer decoded(100);
+    decodeEventsAsync(replay, decoded, context.getStream());
+
+    ClassifiedEventBuffer classified(100);
+    classifyEventsAsync(decoded, classified, context.getStream());
+
+    GPUOrderBookStateManager stateMgr(1000);
+    stateMgr.processEventsShadow(classified, decoded, 0.01, context.getStream());
+    context.synchronize();
+
+    std::string errMsg;
+    bool ok = stateMgr.verifyBatch(decoded, 0.01, &errMsg);
+    if (!ok)
+    {
+        std::cerr << "Verification failed: " << errMsg << "\n";
+    }
+    assert(ok);
+
+    std::cout << "PASSED\n";
+}
+
+void testExecuteVisiblePartialAndFull()
+{
+    std::cout << "[Test] Execute Visible Partial & Full Fills ... ";
+
+    CUDAContext context;
+    std::vector<Event> events = {
+        createAddEvent(501, Side::Buy, 99.0, 100, 1000),
+        createExecuteVisibleEvent(501, Side::Buy, 99.0, 40, 1001), // Partial fill (60 remaining)
+        createExecuteVisibleEvent(501, Side::Buy, 99.0, 60, 1002)  // Full fill (0 remaining)
+    };
+
+    ReplayBuffer replay(100);
+    replay.uploadBatch(events.data(), events.size(), context.getStream());
+
+    DecodedEventBuffer decoded(100);
+    decodeEventsAsync(replay, decoded, context.getStream());
+
+    ClassifiedEventBuffer classified(100);
+    classifyEventsAsync(decoded, classified, context.getStream());
+
+    GPUOrderBookStateManager stateMgr(1000);
+    stateMgr.processEventsShadow(classified, decoded, 0.01, context.getStream());
+    context.synchronize();
+
+    std::string errMsg;
+    bool ok = stateMgr.verifyBatch(decoded, 0.01, &errMsg);
+    if (!ok)
+    {
+        std::cerr << "Verification failed: " << errMsg << "\n";
+    }
+    assert(ok);
+
+    std::cout << "PASSED\n";
+}
+
+void testExecuteHiddenIceberg()
+{
+    std::cout << "[Test] Execute Hidden Iceberg Order ... ";
+
+    CUDAContext context;
+    std::vector<Event> events = {
+        createAddEvent(601, Side::Buy, 100.0, 150, 1000),
+        createExecuteHiddenEvent(601, Side::Buy, 100.0, 50, 1001)
+    };
+
+    ReplayBuffer replay(100);
+    replay.uploadBatch(events.data(), events.size(), context.getStream());
+
+    DecodedEventBuffer decoded(100);
+    decodeEventsAsync(replay, decoded, context.getStream());
+
+    ClassifiedEventBuffer classified(100);
+    classifyEventsAsync(decoded, classified, context.getStream());
+
+    GPUOrderBookStateManager stateMgr(1000);
+    stateMgr.processEventsShadow(classified, decoded, 0.01, context.getStream());
+    context.synchronize();
+
+    std::string errMsg;
+    bool ok = stateMgr.verifyBatch(decoded, 0.01, &errMsg);
+    if (!ok)
+    {
+        std::cerr << "Verification failed: " << errMsg << "\n";
+    }
+    assert(ok);
+
+    std::cout << "PASSED\n";
+}
+
+void testAtomicCASTerminalStateProtection()
+{
+    std::cout << "[Test] AtomicCAS Terminal State Protection ... ";
+
+    CUDAContext context;
+    std::vector<Event> events = {
+        createAddEvent(701, Side::Sell, 105.0, 50, 1000),
+        createCancelEvent(701, Side::Sell, 105.0, 50, 1001), // Order becomes Canceled (status 1)
+        createModifyEvent(701, Side::Sell, 106.0, 100, 1002) // Trailing modify on canceled order (rejected)
+    };
+
+    ReplayBuffer replay(100);
+    replay.uploadBatch(events.data(), events.size(), context.getStream());
+
+    DecodedEventBuffer decoded(100);
+    decodeEventsAsync(replay, decoded, context.getStream());
+
+    ClassifiedEventBuffer classified(100);
+    classifyEventsAsync(decoded, classified, context.getStream());
+
+    GPUOrderBookStateManager stateMgr(1000);
+    stateMgr.processEventsShadow(classified, decoded, 0.01, context.getStream());
+    context.synchronize();
+
+    std::string errMsg;
+    bool ok = stateMgr.verifyBatch(decoded, 0.01, &errMsg);
+    if (!ok)
+    {
+        std::cerr << "Verification failed: " << errMsg << "\n";
+    }
+    assert(ok);
+
+    std::cout << "PASSED\n";
+}
+
 int main()
 {
     std::cout << "====================================================\n";
-    std::cout << "  GPU Order Book State Manager Phase 1 Tests (Shadow Mode)\n";
+    std::cout << "  GPU Order Book State Manager Phase 2 Tests (Shadow Mode)\n";
     std::cout << "====================================================\n";
 
     testAddSingleOrder();
@@ -241,6 +481,11 @@ int main()
     testCancelFullOrder();
     testCancelPartialOrder();
     testCancelNonExistentOrder();
+    testModifyOrderPriceAndQuantity();
+    testDeleteOrder();
+    testExecuteVisiblePartialAndFull();
+    testExecuteHiddenIceberg();
+    testAtomicCASTerminalStateProtection();
 
     std::cout << "All GPUOrderBookStateManager tests PASSED successfully!\n";
     return 0;
