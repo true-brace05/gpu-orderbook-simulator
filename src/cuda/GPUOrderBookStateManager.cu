@@ -223,6 +223,197 @@ void GPUOrderBookStateManager::reset(cudaStream_t stream)
     }
 }
 
+__global__ void processModifyEventsKernel(
+    const int* modifyIndices,
+    std::size_t numModifyEvents,
+    ConstDecodedEventSoAView decodedSoA,
+    GPUOrderState* orders,
+    const HashEntry* hashMap,
+    std::size_t hashCapacity,
+    double tickSize)
+{
+    std::size_t tid = static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (tid >= numModifyEvents)
+    {
+        return;
+    }
+
+    int modIdx = modifyIndices[tid];
+    int orderId = decodedSoA.orderIds[modIdx];
+    double newPrice = decodedSoA.prices[modIdx];
+    uint32_t newPriceTick = static_cast<uint32_t>(llround(newPrice / tickSize));
+    int newQty = decodedSoA.quantities[modIdx];
+    uint64_t newTimestamp = decodedSoA.timestamps[modIdx];
+
+    if (newQty < 0)
+    {
+        return;
+    }
+
+    int slotIndex = lookupHashEntry(hashMap, static_cast<uint32_t>(hashCapacity), orderId);
+    if (slotIndex >= 0)
+    {
+        GPUOrderState& order = orders[slotIndex];
+
+        // Terminal state protection: modify ONLY if status is Active (0)
+        if (order.status != 0)
+        {
+            return;
+        }
+
+        // Monotonic timestamp check: modify only if newTimestamp >= order.timestamp
+        if (newTimestamp < order.timestamp)
+        {
+            return;
+        }
+
+        atomicExch(&order.priceTick, newPriceTick);
+        atomicExch(&order.quantity, newQty);
+        atomicExch(&order.displayQuantity, newQty);
+        atomicExch(&order.reserveQuantity, 0);
+        atomicExch(reinterpret_cast<unsigned long long*>(&order.timestamp), static_cast<unsigned long long>(newTimestamp));
+
+        if (newQty == 0)
+        {
+            atomicCAS(&order.status, 0, 2); // Deleted (2)
+        }
+    }
+}
+
+__global__ void processDeleteEventsKernel(
+    const int* deleteIndices,
+    std::size_t numDeleteEvents,
+    ConstDecodedEventSoAView decodedSoA,
+    GPUOrderState* orders,
+    const HashEntry* hashMap,
+    std::size_t hashCapacity)
+{
+    std::size_t tid = static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (tid >= numDeleteEvents)
+    {
+        return;
+    }
+
+    int delIdx = deleteIndices[tid];
+    int orderId = decodedSoA.orderIds[delIdx];
+
+    int slotIndex = lookupHashEntry(hashMap, static_cast<uint32_t>(hashCapacity), orderId);
+    if (slotIndex >= 0)
+    {
+        GPUOrderState& order = orders[slotIndex];
+
+        // Terminal state transition Active (0) -> Deleted (2) using atomicCAS
+        int prevStatus = atomicCAS(&order.status, 0, 2);
+        if (prevStatus == 0)
+        {
+            atomicExch(&order.quantity, 0);
+            atomicExch(&order.displayQuantity, 0);
+            atomicExch(&order.reserveQuantity, 0);
+        }
+    }
+}
+
+__global__ void processExecuteVisibleEventsKernel(
+    const int* execIndices,
+    std::size_t numExecEvents,
+    ConstDecodedEventSoAView decodedSoA,
+    GPUOrderState* orders,
+    const HashEntry* hashMap,
+    std::size_t hashCapacity)
+{
+    std::size_t tid = static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (tid >= numExecEvents)
+    {
+        return;
+    }
+
+    int execIdx = execIndices[tid];
+    int orderId = decodedSoA.orderIds[execIdx];
+    int execQty = decodedSoA.quantities[execIdx];
+
+    if (execQty <= 0)
+    {
+        return;
+    }
+
+    int slotIndex = lookupHashEntry(hashMap, static_cast<uint32_t>(hashCapacity), orderId);
+    if (slotIndex >= 0)
+    {
+        GPUOrderState& order = orders[slotIndex];
+
+        // Terminal state protection: execute ONLY if status is Active (0)
+        if (order.status != 0)
+        {
+            return;
+        }
+
+        int oldTotal = atomicSub(&order.quantity, execQty);
+        atomicSub(&order.displayQuantity, execQty);
+
+        if (oldTotal <= execQty)
+        {
+            atomicExch(&order.quantity, 0);
+            atomicExch(&order.displayQuantity, 0);
+            atomicExch(&order.reserveQuantity, 0);
+            atomicCAS(&order.status, 0, 3); // Filled (3)
+        }
+    }
+}
+
+__global__ void processExecuteHiddenEventsKernel(
+    const int* execIndices,
+    std::size_t numExecEvents,
+    ConstDecodedEventSoAView decodedSoA,
+    GPUOrderState* orders,
+    const HashEntry* hashMap,
+    std::size_t hashCapacity)
+{
+    std::size_t tid = static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (tid >= numExecEvents)
+    {
+        return;
+    }
+
+    int execIdx = execIndices[tid];
+    int orderId = decodedSoA.orderIds[execIdx];
+    int execQty = decodedSoA.quantities[execIdx];
+
+    if (execQty <= 0)
+    {
+        return;
+    }
+
+    int slotIndex = lookupHashEntry(hashMap, static_cast<uint32_t>(hashCapacity), orderId);
+    if (slotIndex >= 0)
+    {
+        GPUOrderState& order = orders[slotIndex];
+
+        // Terminal state protection: execute ONLY if status is Active (0)
+        if (order.status != 0)
+        {
+            return;
+        }
+
+        int oldTotal = atomicSub(&order.quantity, execQty);
+        int oldReserve = atomicSub(&order.reserveQuantity, execQty);
+
+        if (oldReserve < execQty)
+        {
+            int overflow = execQty - (oldReserve > 0 ? oldReserve : 0);
+            atomicExch(&order.reserveQuantity, 0);
+            atomicSub(&order.displayQuantity, overflow);
+        }
+
+        if (oldTotal <= execQty)
+        {
+            atomicExch(&order.quantity, 0);
+            atomicExch(&order.displayQuantity, 0);
+            atomicExch(&order.reserveQuantity, 0);
+            atomicCAS(&order.status, 0, 3); // Filled (3)
+        }
+    }
+}
+
 void GPUOrderBookStateManager::processEventsShadow(
     const ClassifiedEventBuffer& classifiedEvents,
     const DecodedEventBuffer& decodedEvents,
@@ -230,6 +421,10 @@ void GPUOrderBookStateManager::processEventsShadow(
     cudaStream_t stream)
 {
     std::size_t numAdd = classifiedEvents.getCount(EventType::Add);
+    std::size_t numModify = classifiedEvents.getCount(EventType::Modify);
+    std::size_t numExecVisible = classifiedEvents.getCount(EventType::ExecuteVisible);
+    std::size_t numExecHidden = classifiedEvents.getCount(EventType::ExecuteHidden);
+    std::size_t numDelete = classifiedEvents.getCount(EventType::Delete);
     std::size_t numCancel = classifiedEvents.getCount(EventType::Cancel);
 
     int blockSize = 256;
@@ -250,7 +445,60 @@ void GPUOrderBookStateManager::processEventsShadow(
             tickSize);
     }
 
-    // 2. Process Cancel events
+    // 2. Process Modify events
+    if (numModify > 0)
+    {
+        int modBlocks = static_cast<int>((numModify + blockSize - 1) / blockSize);
+        processModifyEventsKernel<<<modBlocks, blockSize, 0, stream>>>(
+            classifiedEvents.getIndices(EventType::Modify),
+            numModify,
+            decodedEvents.getDeviceView(),
+            ordersBuf.data(),
+            hashMapBuf.data(),
+            hashCapacity,
+            tickSize);
+    }
+
+    // 3. Process ExecuteVisible events
+    if (numExecVisible > 0)
+    {
+        int execBlocks = static_cast<int>((numExecVisible + blockSize - 1) / blockSize);
+        processExecuteVisibleEventsKernel<<<execBlocks, blockSize, 0, stream>>>(
+            classifiedEvents.getIndices(EventType::ExecuteVisible),
+            numExecVisible,
+            decodedEvents.getDeviceView(),
+            ordersBuf.data(),
+            hashMapBuf.data(),
+            hashCapacity);
+    }
+
+    // 4. Process ExecuteHidden events
+    if (numExecHidden > 0)
+    {
+        int execHBlocks = static_cast<int>((numExecHidden + blockSize - 1) / blockSize);
+        processExecuteHiddenEventsKernel<<<execHBlocks, blockSize, 0, stream>>>(
+            classifiedEvents.getIndices(EventType::ExecuteHidden),
+            numExecHidden,
+            decodedEvents.getDeviceView(),
+            ordersBuf.data(),
+            hashMapBuf.data(),
+            hashCapacity);
+    }
+
+    // 5. Process Delete events
+    if (numDelete > 0)
+    {
+        int delBlocks = static_cast<int>((numDelete + blockSize - 1) / blockSize);
+        processDeleteEventsKernel<<<delBlocks, blockSize, 0, stream>>>(
+            classifiedEvents.getIndices(EventType::Delete),
+            numDelete,
+            decodedEvents.getDeviceView(),
+            ordersBuf.data(),
+            hashMapBuf.data(),
+            hashCapacity);
+    }
+
+    // 6. Process Cancel events
     if (numCancel > 0)
     {
         int cancelBlocks = static_cast<int>((numCancel + blockSize - 1) / blockSize);
